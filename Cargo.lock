@@ -3,5 +3,52 @@
 version = 4
 
 [[package]]
+name = "cc"
+version = "1.0.79"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50d30906286121d95be3d479533b458f87493b30a4b5f79a607db8f5d11aa91f"
+
+[[package]]
+name = "diff"
+version = "0.1.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "56254986775e3233ffa9c4d7d3faaf6d36a2c09d30b20687e9f88bc8bafc16c8"
+
+[[package]]
 name = "gfxd-rs"
 version = "0.1.0"
+dependencies = [
+ "gfxd-sys",
+ "pretty_assertions",
+]
+
+[[package]]
+name = "gfxd-sys"
+version = "0.1.0"
+source = "git+https://github.com/Decompollaborate/gfxd-sys.git#fc9114fa5ae21f5af74781586cd6ce1057318b9a"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
+name = "libc"
+version = "0.2.163"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fdaeca4cf44ed4ac623e86ef41f056e848dbeab7ec043ecb7326ba300b36fd0"
+
+[[package]]
+name = "pretty_assertions"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3ae130e2f271fbc2ac3a40fb1d07180839cdbbe443c7a27e1e3c13c5cac0116d"
+dependencies = [
+ "diff",
+ "yansi",
+]
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
