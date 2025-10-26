@@ -12,7 +12,7 @@ pub(crate) mod lib_data;
 pub(crate) mod microcode;
 pub(crate) mod printer;
 
-pub use customizer::{Customizer, DoDefaultOutput};
+pub use customizer::{Customizer, DoDefaultOutput, MacroFnRet};
 pub use disassembler::Disassembler;
 pub use microcode::Microcode;
-pub use printer::Printer;
+pub use printer::{MacroPrinter, Printer};

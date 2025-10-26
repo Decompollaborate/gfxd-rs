@@ -5,7 +5,7 @@ use core::{ffi, slice};
 
 use gfxd_sys::ptr::NonNullConst;
 
-use crate::{lib_data::LibData, Printer};
+use crate::{lib_data::LibData, MacroPrinter, Printer};
 
 // 'cls is short for closure
 #[allow(clippy::type_complexity)]
@@ -13,23 +13,18 @@ pub struct Customizer<'cls> {
     before_execution: Option<&'cls mut dyn FnMut(&mut Printer)>,
     after_execution: Option<&'cls mut dyn FnMut(&mut Printer)>,
 
+    macro_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter) -> MacroFnRet>,
+    arg_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter, i32)>,
+
     // tlut_fn: Option<Box<dyn FnMut(&Printer, u32, i32, i32) -> DoDefaultOutput>>,
     vtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, u32, i32) -> DoDefaultOutput>,
 }
 
-impl<'cls> Customizer<'cls> {
-    pub const fn new() -> Self {
-        Self {
-            before_execution: None,
-            after_execution: None,
-            // tlut_fn: None,
-            vtx_fn: None,
-        }
-    }
-
+impl Customizer<'_> {
     pub(crate) fn apply_callbacks(&mut self) {
         self.apply_out_callback();
-        self.apply_user_callbacks();
+        self.apply_user_macro_callbacks();
+        self.apply_user_arg_callbacks();
     }
 
     fn apply_out_callback(&mut self) {
@@ -63,7 +58,51 @@ impl<'cls> Customizer<'cls> {
         }
     }
 
-    fn apply_user_callbacks(&mut self) {
+    fn apply_user_macro_callbacks(&mut self) {
+        if self.macro_fn.is_some() {
+            extern "C" fn callback() -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().macro_fn {
+                    let mut printer = MacroPrinter::new();
+                    (closure)(&mut printer)
+                } else {
+                    panic!("macro_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::handlers::gfxd_macro_fn(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::handlers::gfxd_macro_fn(None);
+            }
+        }
+
+        if self.arg_fn.is_some() {
+            extern "C" fn callback(arg_num: ffi::c_int) {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                if let Some(closure) = &mut lib_data.get_customizer_mut().arg_fn {
+                    let mut printer = MacroPrinter::new();
+                    (closure)(&mut printer, arg_num)
+                } else {
+                    panic!("arg_fn closure was None?")
+                }
+            }
+            unsafe {
+                gfxd_sys::handlers::gfxd_arg_fn(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::handlers::gfxd_arg_fn(None);
+            }
+        }
+    }
+
+    fn apply_user_arg_callbacks(&mut self) {
         if self.vtx_fn.is_some() {
             extern "C" fn callback(vtx: u32, num: i32) -> ffi::c_int {
                 let lib_data = LibData::get().expect("Welp. Maybe race condition?");
@@ -86,7 +125,22 @@ impl<'cls> Customizer<'cls> {
             }
         }
     }
+}
 
+impl Customizer<'_> {
+    pub const fn new() -> Self {
+        Self {
+            before_execution: None,
+            after_execution: None,
+            macro_fn: None,
+            arg_fn: None,
+            // tlut_fn: None,
+            vtx_fn: None,
+        }
+    }
+}
+
+impl<'cls> Customizer<'cls> {
     pub fn before_after_execution_callback<B, A>(&mut self, before: &'cls mut B, after: &'cls mut A)
     where
         B: FnMut(&mut Printer),
@@ -108,7 +162,25 @@ impl<'cls> Customizer<'cls> {
             (closure)(&mut printer);
         }
     }
+}
 
+impl<'cls> Customizer<'cls> {
+    pub fn macro_fn<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut MacroPrinter) -> MacroFnRet,
+    {
+        self.macro_fn = Some(callback);
+    }
+
+    pub fn arg_fn<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut MacroPrinter, i32),
+    {
+        self.arg_fn = Some(callback);
+    }
+}
+
+impl<'cls> Customizer<'cls> {
     /*
     pub fn tlut_callback<F>(&mut self, callback: F)
     where
@@ -141,8 +213,23 @@ impl DoDefaultOutput {
     #[inline]
     pub(crate) const fn into_ret(self) -> ffi::c_int {
         match self {
-            DoDefaultOutput::DoDefault => 0,
-            DoDefaultOutput::Override => 1,
+            Self::DoDefault => 0,
+            Self::Override => 1,
+        }
+    }
+}
+
+pub enum MacroFnRet {
+    Continue,
+    Stop,
+}
+
+impl MacroFnRet {
+    #[inline]
+    pub(crate) const fn into_ret(self) -> ffi::c_int {
+        match self {
+            Self::Continue => 0,
+            Self::Stop => 1,
         }
     }
 }
