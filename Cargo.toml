@@ -43,6 +43,7 @@ std = ["gfxd-sys/std"]
 [dependencies]
 # TODO: remove this dependency if we ever bump the rust-version to 1.64+
 gfxd-sys = { git = "https://github.com/Decompollaborate/gfxd-sys.git", default-features = false }
+# gfxd-sys = { path = "../gfxd-sys/", default-features = false }
 
 [dev-dependencies]
 pretty_assertions = "1"
