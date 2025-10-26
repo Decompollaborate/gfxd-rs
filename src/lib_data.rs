@@ -14,14 +14,14 @@ use crate::Customizer;
 /// The whole struct is passed to libgfxd. We only use udata_* functions with
 /// this type, and only this type.
 #[must_use]
-pub(crate) struct LibData<'c, 'vtx> {
+pub(crate) struct LibData<'c, 'cls> {
     out_buf: String,
-    customizer: &'c mut Customizer<'vtx>,
+    customizer: &'c mut Customizer<'cls>,
     _pin: PhantomPinned,
 }
 
-impl<'c, 'vtx> LibData<'c, 'vtx> {
-    pub(crate) fn new(customizer: &'c mut Customizer<'vtx>) -> Self {
+impl<'c, 'cls> LibData<'c, 'cls> {
+    pub(crate) fn new(customizer: &'c mut Customizer<'cls>) -> Self {
         Self {
             out_buf: String::new(),
             customizer,
@@ -33,7 +33,7 @@ impl<'c, 'vtx> LibData<'c, 'vtx> {
         self.out_buf
     }
 
-    pub(crate) fn gfxd_set<'l>(&'l mut self) -> LibDataWrap<'l, 'c, 'vtx> {
+    pub(crate) fn gfxd_set<'l>(&'l mut self) -> LibDataWrap<'l, 'c, 'cls> {
         LibDataWrap::new(self)
     }
 
@@ -48,7 +48,7 @@ impl<'c, 'vtx> LibData<'c, 'vtx> {
         self.out_buf.push_str(string);
     }
 
-    pub(crate) fn get_customizer_mut<'slf>(&'slf mut self) -> &'c mut Customizer<'vtx>
+    pub(crate) fn get_customizer_mut<'slf>(&'slf mut self) -> &'c mut Customizer<'cls>
     where
         'slf: 'c,
     {
@@ -56,12 +56,12 @@ impl<'c, 'vtx> LibData<'c, 'vtx> {
     }
 }
 
-pub(crate) struct LibDataWrap<'l, 'c, 'vtx> {
-    lib_data: &'l mut LibData<'c, 'vtx>,
+pub(crate) struct LibDataWrap<'l, 'c, 'cls> {
+    lib_data: &'l mut LibData<'c, 'cls>,
 }
 
-impl<'l, 'c, 'vtx> LibDataWrap<'l, 'c, 'vtx> {
-    fn new(lib_data: &'l mut LibData<'c, 'vtx>) -> Self {
+impl<'l, 'c, 'cls> LibDataWrap<'l, 'c, 'cls> {
+    fn new(lib_data: &'l mut LibData<'c, 'cls>) -> Self {
         assert!(unsafe { gfxd_sys::settings::gfxd_udata_get() }.is_none());
 
         let me = NonNullMut::new_void(lib_data);
@@ -73,6 +73,13 @@ impl<'l, 'c, 'vtx> LibDataWrap<'l, 'c, 'vtx> {
         lib_data.customizer.apply_callbacks();
 
         Self { lib_data }
+    }
+
+    pub(crate) fn do_before(&mut self) {
+        self.lib_data.customizer.do_before();
+    }
+    pub(crate) fn do_after(&mut self) {
+        self.lib_data.customizer.do_after();
     }
 }
 

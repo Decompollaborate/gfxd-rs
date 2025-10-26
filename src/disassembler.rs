@@ -41,9 +41,9 @@ impl Disassembler {
         // let lib_data = alloc::boxed::Box::pin(lib_data);
 
         {
-            let lib_data_wrap = lib_data.gfxd_set();
+            let mut lib_data_wrap = lib_data.gfxd_set();
 
-            unsafe { self.disassemble_impl(data, microcode, &lib_data_wrap) };
+            unsafe { self.disassemble_impl(data, microcode, &mut lib_data_wrap) };
         }
 
         lib_data.consume()
@@ -59,7 +59,7 @@ impl Disassembler {
         self,
         data: &[u8],
         microcode: Microcode,
-        _lib_data_wrap: &LibDataWrap,
+        lib_data_wrap: &mut LibDataWrap,
     ) {
         // Setup input and output
         unsafe {
@@ -91,11 +91,11 @@ impl Disassembler {
         }
 
         // Run
+        lib_data_wrap.do_before();
         unsafe {
-            gfxd_sys::custom_output::gfxd_puts(c_str_from_bytes(b"{\n\0"));
             gfxd_sys::execution::gfxd_execute();
-            gfxd_sys::custom_output::gfxd_puts(c_str_from_bytes(b"}\n\0"));
         }
+        lib_data_wrap.do_after();
     }
 }
 
@@ -152,6 +152,14 @@ mod tests {
 
         let mut customizer = Customizer::new();
 
+        let mut before = |printer: &mut Printer| {
+            printer.write_str("{\n");
+        };
+        let mut after = |printer: &mut Printer| {
+            printer.write_str("}\n");
+        };
+        customizer.before_after_execution_callback(&mut before, &mut after);
+
         let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
         assert_eq!(OUTPUT, out);
     }
@@ -191,8 +199,15 @@ mod tests {
 
         let mut customizer = Customizer::new();
 
-        let mut vtx_tracker = BTreeMap::new();
+        let mut before = |printer: &mut Printer| {
+            printer.write_str("{\n");
+        };
+        let mut after = |printer: &mut Printer| {
+            printer.write_str("}\n");
+        };
+        customizer.before_after_execution_callback(&mut before, &mut after);
 
+        let mut vtx_tracker = BTreeMap::new();
         let mut vtx_callback = |printer: &mut Printer, vtx, num| {
             vtx_tracker.insert(vtx, num);
 
@@ -241,8 +256,15 @@ mod tests {
 
         let mut customizer = Customizer::new();
 
-        let mut vtx_tracker = BTreeMap::new();
+        let mut before = |printer: &mut Printer| {
+            printer.write_str("{\n");
+        };
+        let mut after = |printer: &mut Printer| {
+            printer.write_str("}\n");
+        };
+        customizer.before_after_execution_callback(&mut before, &mut after);
 
+        let mut vtx_tracker = BTreeMap::new();
         let mut vtx_callback = |printer: &mut Printer, vtx, num| {
             vtx_tracker.insert(vtx, num);
 

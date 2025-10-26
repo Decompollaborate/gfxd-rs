@@ -12,17 +12,18 @@ repository = "https://github.com/Decompollaborate/gfxd-rs"
 license = "MIT"
 # description = ""
 readme = "README.md"
-# keywords = [
-#     "disassembler",
-#     "n64",
-#     "nintendo",
-#     "no_std",
-#     "bindings",
-# ]
-# categories = [
-#     "parsing",
-#     "no-std",
-# ]
+keywords = [
+    "disassembler",
+    "n64",
+    "nintendo",
+    "no_std",
+    "bindings",
+]
+categories = [
+    "parsing",
+    "api-bindings",
+    "no-std",
+]
 
 # Use https://github.com/foresterre/cargo-msrv to check the MSRV
 # ```
