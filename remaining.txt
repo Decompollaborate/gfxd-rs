@@ -57,31 +57,6 @@
 ##### `void gfxd_disable(int cap)`
 
 
-## Macro information
-
-##### `int gfxd_foreach_pkt(int (*fn)(void))`
-
-##### `const void *gfxd_macro_data()`
-
-##### `int gfxd_macro_id()`
-
-##### `const char *gfxd_macro_name()`
-
-##### `int gfxd_arg_count()`
-
-##### `int gfxd_arg_type(int arg_num)`
-
-##### `const char *gfxd_arg_name(int arg_num)`
-
-##### `int gfxd_arg_fmt(int arg_num)`
-
-##### `const gfxd_value_t *gfxd_arg_value(int arg_num)`
-
-##### `const gfxd_value_t *gfxd_value_by_type(int type, int idx)`
-
-##### `int gfxd_arg_valid(int arg_num)`
-
-
 ## Custom output
 
 ##### `int gfxd_puts(const char *str)`

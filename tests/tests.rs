@@ -215,23 +215,60 @@ fn test_macro_info() {
     ];
     static OUTPUT: &str = "\
 {
+    /* 0100300608015540 */
+    /* arg_count: 3 */
+        /* arg 0: v, value: 0x08015540 */
+        /* arg 1: n, value: 3 */
+        /* arg 2: v0, value: 0 */
     /* 0x00 */ gsSPVertex((Vtx *)0x08015540, 3, 0), /* packets: 1 */
+
+    /* 0500020400000000 */
+    /* arg_count: 4 */
+        /* arg 0: v0, value: 0 */
+        /* arg 1: v1, value: 1 */
+        /* arg 2: v2, value: 2 */
+        /* arg 3: flag, value: 0 */
     /* 0x08 */ gsSP1Triangle(0, 1, 2, 0), /* packets: 1 */
+
+    /* DB02000000000018DC08060A09000008DC08090A09000000 */
+    /* arg_count: 1 */
+        /* arg 0: l, value: 0x09000000 */
     /* 0x10 */ gsSPSetLights1(*(Lightsn *)0x09000000), /* packets: 3 */
+
+    /* DF00000000000000 */
+    /* arg_count: 0 */
     /* 0x28 */ gsSPEndDisplayList(), /* packets: 1 */
+
 }
 ";
 
     let mut customizer = Customizer::new();
 
     let mut macro_fn = |printer: &mut MacroPrinter, info: &MacroInfo| {
-        /* Print a 4 spaces before each macro, and a comma and newline after each macro */
+        let macro_data = info.macro_data();
+        printer.write_str("    /* ");
+        for x in macro_data {
+            printer.write_str(&format!("{x:02X}"));
+        }
+        printer.write_str(" */\n");
+
+        let arg_count = info.arg_count();
+        printer.write_str(&format!("    /* arg_count: {arg_count} */\n"));
+        for i in 0..arg_count {
+            let arg_name = info.arg_name(i).unwrap();
+            let arg_value = info.arg_value(i).unwrap();
+            printer.write_str(&format!(
+                "        /* arg {i}: {arg_name}, value: {arg_value} */\n"
+            ));
+        }
+
+        // The actual macro
+
         printer.write_str("    ");
 
         let offset = info.macro_offset();
         printer.write_str(&format!("/* 0x{offset:02X} */ "));
 
-        /* Execute the default macro handler */
         let ret = printer.macro_dflt();
 
         printer.write_str(",");
@@ -239,7 +276,7 @@ fn test_macro_info() {
         let packets = info.macro_packets();
         printer.write_str(&format!(" /* packets: {packets} */"));
 
-        printer.write_str("\n");
+        printer.write_str("\n\n");
         ret
     };
     customizer.macro_fn(&mut macro_fn);

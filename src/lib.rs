@@ -15,6 +15,6 @@ pub(crate) mod printer;
 
 pub use customizer::{Customizer, DoDefaultOutput, MacroFnRet};
 pub use disassembler::Disassembler;
-pub use macro_info::MacroInfo;
+pub use macro_info::{ArgValue, MacroInfo};
 pub use microcode::Microcode;
 pub use printer::{MacroPrinter, Printer};
