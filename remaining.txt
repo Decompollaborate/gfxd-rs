@@ -1,0 +1,89 @@
+## Argument callbacks
+
+##### `int gfxd_arg_callbacks(int arg_num)`
+
+##### `typedef int gfxd_tlut_fn_t(uint32_t tlut, int32_t idx, int32_t count)`
+##### `void gfxd_tlut_callback(gfxd_tlut_fn_t *fn)`
+
+##### `typedef int gfxd_timg_fn_t(uint32_t timg, int32_t fmt, int32_t siz, int32_t width, int32_t height, int32_t pal)`
+##### `void gfxd_timg_callback(gfxd_timg_fn_t *fn)`
+
+##### `typedef int gfxd_cimg_fn_t(uint32_t cimg, int32_t fmt, int32_t siz, int32_t width)`
+##### `void gfxd_cimg_callback(gfxd_cimg_fn_t *fn)`
+
+##### `typedef int gfxd_zimg_fn_t(uint32_t zimg)`
+##### `void gfxd_zimg_callback(gfxd_zimg_fn_t *fn)`
+
+##### `typedef int gfxd_dl_fn_t(uint32_t dl)`
+##### `void gfxd_dl_callback(gfxd_dl_fn_t *fn)`
+
+##### `typedef int gfxd_mtx_fn_t(uint32_t mtx)`
+##### `void gfxd_mtx_callback(gfxd_mtx_fn_t *fn)`
+
+##### `typedef int gfxd_lookat_fn_t(uint32_t lookat, int32_t count)`
+##### `void gfxd_lookat_callback(gfxd_lookat_fn_t *fn)`
+
+##### `typedef int gfxd_light_fn_t(uint32_t light)`
+##### `void gfxd_light_callback(gfxd_light_fn_t *fn)`
+
+##### `typedef int gfxd_lightsn_fn_t(uint32_t lightsn, int32_t num)`
+##### `void gfxd_lightsn_callback(gfxd_lightsn_fn_t *fn)`
+
+##### `typedef int gfxd_seg_fn_t(uint32_t seg, int32_t num)`
+##### `void gfxd_seg_callback(gfxd_seg_fn_t *fn)`
+
+##### `typedef int gfxd_vtx_fn_t(uint32_t vtx, int32_t num)`
+##### `void gfxd_vtx_callback(gfxd_vtx_fn_t *fn)`
+
+##### `typedef int gfxd_vp_fn_t(uint32_t vp)`
+##### `void gfxd_vp_callback(gfxd_vp_fn_t *fn)`
+
+##### `typedef int gfxd_uctext_fn_t(uint32_t text, uint32_t size)`
+##### `void gfxd_uctext_callback(gfxd_uctext_fn_t *fn)`
+
+##### `typedef int gfxd_ucdata_fn_t(uint32_t data, uint32_t size)`
+##### `void gfxd_ucdata_callback(gfxd_ucdata_fn_t *fn)`
+
+##### `typedef int gfxd_dram_fn_t(uint32_t dram, uint32_t size)`
+##### `void gfxd_dram_callback(gfxd_dram_fn_t *fn)`
+
+## General settings
+
+##### `void gfxd_endian(int endian, int wordsize)`
+
+##### `void gfxd_dynamic(const char *arg)`
+
+##### `void gfxd_enable(int cap)`
+##### `void gfxd_disable(int cap)`
+
+
+## Macro information
+
+##### `int gfxd_foreach_pkt(int (*fn)(void))`
+
+##### `const void *gfxd_macro_data()`
+
+##### `int gfxd_macro_id()`
+
+##### `const char *gfxd_macro_name()`
+
+##### `int gfxd_arg_count()`
+
+##### `int gfxd_arg_type(int arg_num)`
+
+##### `const char *gfxd_arg_name(int arg_num)`
+
+##### `int gfxd_arg_fmt(int arg_num)`
+
+##### `const gfxd_value_t *gfxd_arg_value(int arg_num)`
+
+##### `const gfxd_value_t *gfxd_value_by_type(int type, int idx)`
+
+##### `int gfxd_arg_valid(int arg_num)`
+
+
+## Custom output
+
+##### `int gfxd_puts(const char *str)`
+
+##### `int gfxd_print_value(int type, const gfxd_value_t *value)`

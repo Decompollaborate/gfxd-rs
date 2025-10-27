@@ -4,7 +4,9 @@
 use pretty_assertions::assert_eq;
 use std::{collections::HashMap, iter::FromIterator};
 
-use gfxd_rs::{Customizer, Disassembler, DoDefaultOutput, MacroPrinter, Microcode, Printer};
+use gfxd_rs::{
+    Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode, Printer,
+};
 
 #[test]
 fn test_basic() {
@@ -41,7 +43,7 @@ fn test_basic() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -104,7 +106,7 @@ fn test_vtx_callback() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -122,7 +124,7 @@ fn test_vtx_callback() {
     customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
-    let mut vtx_callback = |printer: &mut Printer, vtx, num| {
+    let mut vtx_callback = |printer: &mut Printer, _info: &_, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
         printer.write_str(&format!("D_{vtx:08X}"));
@@ -170,7 +172,7 @@ fn test_vtx_callback_default() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -188,7 +190,7 @@ fn test_vtx_callback_default() {
     customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
-    let mut vtx_callback = |printer: &mut Printer, vtx, num| {
+    let mut vtx_callback = |printer: &mut Printer, _info: &_, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
         printer.write_str("(Vtx *)");
@@ -199,4 +201,63 @@ fn test_vtx_callback_default() {
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
     assert_eq!(vtx_tracker, HashMap::from_iter([(0x000002E0, 12)]));
+}
+
+#[test]
+fn test_macro_info() {
+    static INPUT: [u8; 0x30] = [
+        0x01, 0x00, 0x30, 0x06, 0x08, 0x01, 0x55, 0x40, //
+        0x05, 0x00, 0x02, 0x04, 0x00, 0x00, 0x00, 0x00, //
+        0xDB, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, //
+        0xDC, 0x08, 0x06, 0x0A, 0x09, 0x00, 0x00, 0x08, //
+        0xDC, 0x08, 0x09, 0x0A, 0x09, 0x00, 0x00, 0x00, //
+        0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+    ];
+    static OUTPUT: &str = "\
+{
+    /* 0x00 */ gsSPVertex((Vtx *)0x08015540, 3, 0), /* packets: 1 */
+    /* 0x08 */ gsSP1Triangle(0, 1, 2, 0), /* packets: 1 */
+    /* 0x10 */ gsSPSetLights1(*(Lightsn *)0x09000000), /* packets: 3 */
+    /* 0x28 */ gsSPEndDisplayList(), /* packets: 1 */
+}
+";
+
+    let mut customizer = Customizer::new();
+
+    let mut macro_fn = |printer: &mut MacroPrinter, info: &MacroInfo| {
+        /* Print a 4 spaces before each macro, and a comma and newline after each macro */
+        printer.write_str("    ");
+
+        let offset = info.macro_offset();
+        printer.write_str(&format!("/* 0x{offset:02X} */ "));
+
+        /* Execute the default macro handler */
+        let ret = printer.macro_dflt();
+
+        printer.write_str(",");
+
+        let packets = info.macro_packets();
+        printer.write_str(&format!(" /* packets: {packets} */"));
+
+        printer.write_str("\n");
+        ret
+    };
+    customizer.macro_fn(&mut macro_fn);
+
+    let mut before = |printer: &mut Printer| {
+        printer.write_str("{\n");
+    };
+    let mut after = |printer: &mut Printer| {
+        printer.write_str("}\n");
+    };
+    customizer.before_after_execution_callback(&mut before, &mut after);
+
+    let mut vtx_callback = |printer: &mut Printer, _info: &_, _vtx, _num| {
+        printer.write_str("(Vtx *)");
+        DoDefaultOutput::DoDefault
+    };
+    customizer.vtx_callback(&mut vtx_callback);
+
+    let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex2, &mut customizer);
+    assert_eq!(OUTPUT, out);
 }
