@@ -9,12 +9,14 @@ extern crate alloc;
 pub(crate) mod customizer;
 pub(crate) mod disassembler;
 pub(crate) mod lib_data;
+pub(crate) mod macro_id;
 pub(crate) mod macro_info;
 pub(crate) mod microcode;
 pub(crate) mod printer;
 
 pub use customizer::{Customizer, DoDefaultOutput, MacroFnRet};
 pub use disassembler::Disassembler;
+pub use macro_id::MacroId;
 pub use macro_info::{ArgValue, MacroInfo};
 pub use microcode::Microcode;
 pub use printer::{MacroPrinter, Printer};

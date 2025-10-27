@@ -3,6 +3,8 @@
 
 use core::{ffi::CStr, fmt, slice};
 
+use crate::MacroId;
+
 const SIZEOF_GFX: usize = 8;
 
 pub struct MacroInfo {
@@ -46,7 +48,12 @@ impl MacroInfo {
         unsafe { slice::from_raw_parts(data_ptr, byte_len) }
     }
 
-    // macro_id
+    /// Returns a number that uniquely identifies the current macro.
+    pub fn macro_id(&self) -> Option<MacroId> {
+        let macro_id_raw = unsafe { gfxd_sys::macro_info::gfxd_macro_id() };
+
+        MacroId::from_u32(macro_id_raw as _)
+    }
 
     // macro_name
 
@@ -101,7 +108,25 @@ impl MacroInfo {
 
     // value_by_type
 
-    // arg_valid
+    /// Returns `Some(true)` if the argument with index `arg_num` is "valid",
+    /// for some definition of valid.
+    ///
+    /// An invalid argument generally means that the disassembler found
+    /// inconsistencies in the input data, or that the data can not be
+    /// reproduced by the current macro type.
+    ///
+    /// The argument still has a value that can be printed, though the value is
+    /// not guaranteed to make any sense.
+    #[must_use]
+    pub fn arg_valid(&self, arg_num: u32) -> Option<bool> {
+        if arg_num >= self.arg_count() {
+            return None;
+        }
+
+        let arg_valid = unsafe { gfxd_sys::macro_info::gfxd_arg_valid(arg_num as _) };
+
+        Some(arg_valid != 0)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]

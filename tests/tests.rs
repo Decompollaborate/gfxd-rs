@@ -217,22 +217,22 @@ fn test_macro_info() {
 {
     /* 0100300608015540 */
     /* arg_count: 3 */
-        /* arg 0: v, value: 0x08015540 */
-        /* arg 1: n, value: 3 */
-        /* arg 2: v0, value: 0 */
+        /* arg 0: v, value: 0x08015540, valid: true */
+        /* arg 1: n, value: 3, valid: true */
+        /* arg 2: v0, value: 0, valid: true */
     /* 0x00 */ gsSPVertex((Vtx *)0x08015540, 3, 0), /* packets: 1 */
 
     /* 0500020400000000 */
     /* arg_count: 4 */
-        /* arg 0: v0, value: 0 */
-        /* arg 1: v1, value: 1 */
-        /* arg 2: v2, value: 2 */
-        /* arg 3: flag, value: 0 */
+        /* arg 0: v0, value: 0, valid: true */
+        /* arg 1: v1, value: 1, valid: true */
+        /* arg 2: v2, value: 2, valid: true */
+        /* arg 3: flag, value: 0, valid: true */
     /* 0x08 */ gsSP1Triangle(0, 1, 2, 0), /* packets: 1 */
 
     /* DB02000000000018DC08060A09000008DC08090A09000000 */
     /* arg_count: 1 */
-        /* arg 0: l, value: 0x09000000 */
+        /* arg 0: l, value: 0x09000000, valid: true */
     /* 0x10 */ gsSPSetLights1(*(Lightsn *)0x09000000), /* packets: 3 */
 
     /* DF00000000000000 */
@@ -245,6 +245,13 @@ fn test_macro_info() {
     let mut customizer = Customizer::new();
 
     let mut macro_fn = |printer: &mut MacroPrinter, info: &MacroInfo| {
+        let macro_id = info.macro_id().unwrap();
+        printer.write_str(&format!(
+            "    /* {} ({}) */\n",
+            macro_id.as_str(),
+            macro_id.to_u32()
+        ));
+
         let macro_data = info.macro_data();
         printer.write_str("    /* ");
         for x in macro_data {
@@ -257,8 +264,9 @@ fn test_macro_info() {
         for i in 0..arg_count {
             let arg_name = info.arg_name(i).unwrap();
             let arg_value = info.arg_value(i).unwrap();
+            let arg_valid = info.arg_valid(i).unwrap();
             printer.write_str(&format!(
-                "        /* arg {i}: {arg_name}, value: {arg_value} */\n"
+                "        /* arg {i}: {arg_name}, value: {arg_value}, valid: {arg_valid} */\n"
             ));
         }
 
