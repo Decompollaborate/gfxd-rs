@@ -49,13 +49,36 @@ impl MacroInfo {
     }
 
     /// Returns a number that uniquely identifies the current macro.
+    #[must_use]
     pub fn macro_id(&self) -> Option<MacroId> {
         let macro_id_raw = unsafe { gfxd_sys::macro_info::gfxd_macro_id() };
 
         MacroId::from_u32(macro_id_raw as _)
     }
 
-    // macro_name
+    /// Returns the name of the current macro.
+    ///
+    /// If the macro does not have a name (i.e. it's invalid), `None` is
+    /// returned.
+    ///
+    /// If a dynamic display list pointer has been specified, the dynamic `g`
+    /// version is returned. Otherwise the static `gs` version is returned.
+    // This function takes `&mut self` instead of plain `&self` because the
+    // returned data from `gfxd_macro_name` is invalidated on subsequent calls
+    // to said function, so `&mut` is used to ensure a unique pointer only ever
+    // exists.
+    #[must_use]
+    pub fn macro_name(&mut self) -> Option<&str> {
+        let macro_name_raw = unsafe { gfxd_sys::macro_info::gfxd_macro_name() }?;
+
+        // SAFETY: The pointer given by gfxd is a nul-terminated C string.
+        let macro_bytes = unsafe { CStr::from_ptr(macro_name_raw.as_ptr()) }.to_bytes();
+
+        // SAFETY: gfxd only uses ASCII.
+        let macro_str = unsafe { str::from_utf8_unchecked(macro_bytes) };
+
+        Some(macro_str)
+    }
 
     /// Returns the number of arguments to the current macro, not including a
     /// dynamic display list pointer if one has been specified.

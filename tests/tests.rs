@@ -43,7 +43,7 @@ fn test_basic() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -106,7 +106,7 @@ fn test_vtx_callback() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -124,7 +124,7 @@ fn test_vtx_callback() {
     customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
-    let mut vtx_callback = |printer: &mut Printer, _info: &_, vtx, num| {
+    let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
         printer.write_str(&format!("D_{vtx:08X}"));
@@ -172,7 +172,7 @@ fn test_vtx_callback_default() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter, _info: &_| {
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
@@ -190,7 +190,7 @@ fn test_vtx_callback_default() {
     customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
-    let mut vtx_callback = |printer: &mut Printer, _info: &_, vtx, num| {
+    let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
         printer.write_str("(Vtx *)");
@@ -215,6 +215,7 @@ fn test_macro_info() {
     ];
     static OUTPUT: &str = "\
 {
+    /* SPVertex (111), gsSPVertex */
     /* 0100300608015540 */
     /* arg_count: 3 */
         /* arg 0: v, value: 0x08015540, valid: true */
@@ -222,6 +223,7 @@ fn test_macro_info() {
         /* arg 2: v0, value: 0, valid: true */
     /* 0x00 */ gsSPVertex((Vtx *)0x08015540, 3, 0), /* packets: 1 */
 
+    /* SP1Triangle (70), gsSP1Triangle */
     /* 0500020400000000 */
     /* arg_count: 4 */
         /* arg 0: v0, value: 0, valid: true */
@@ -230,11 +232,13 @@ fn test_macro_info() {
         /* arg 3: flag, value: 0, valid: true */
     /* 0x08 */ gsSP1Triangle(0, 1, 2, 0), /* packets: 1 */
 
+    /* SPSetLights1 (98), gsSPSetLights1 */
     /* DB02000000000018DC08060A09000008DC08090A09000000 */
     /* arg_count: 1 */
         /* arg 0: l, value: 0x09000000, valid: true */
     /* 0x10 */ gsSPSetLights1(*(Lightsn *)0x09000000), /* packets: 3 */
 
+    /* SPEndDisplayList (78), gsSPEndDisplayList */
     /* DF00000000000000 */
     /* arg_count: 0 */
     /* 0x28 */ gsSPEndDisplayList(), /* packets: 1 */
@@ -244,12 +248,14 @@ fn test_macro_info() {
 
     let mut customizer = Customizer::new();
 
-    let mut macro_fn = |printer: &mut MacroPrinter, info: &MacroInfo| {
+    let mut macro_fn = |printer: &mut MacroPrinter, info: &mut MacroInfo| {
         let macro_id = info.macro_id().unwrap();
+        let macro_name = info.macro_name().unwrap();
         printer.write_str(&format!(
-            "    /* {} ({}) */\n",
+            "    /* {} ({}), {} */\n",
             macro_id.as_str(),
-            macro_id.to_u32()
+            macro_id.to_u32(),
+            macro_name,
         ));
 
         let macro_data = info.macro_data();
@@ -297,7 +303,7 @@ fn test_macro_info() {
     };
     customizer.before_after_execution_callback(&mut before, &mut after);
 
-    let mut vtx_callback = |printer: &mut Printer, _info: &_, _vtx, _num| {
+    let mut vtx_callback = |printer: &mut Printer, _info: &mut _, _vtx, _num| {
         printer.write_str("(Vtx *)");
         DoDefaultOutput::DoDefault
     };
