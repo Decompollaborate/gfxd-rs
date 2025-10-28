@@ -218,24 +218,24 @@ fn test_macro_info() {
     /* SPVertex (111), gsSPVertex */
     /* 0100300608015540 */
     /* arg_count: 3 */
-        /* arg 0: v, value: 0x08015540, valid: true */
-        /* arg 1: n, value: 3, valid: true */
-        /* arg 2: v0, value: 0, valid: true */
+        /* arg 0: v, type: Vtxptr, value: 0x08015540, valid: true */ /* 0x08015540 */
+        /* arg 1: n, type: Num, value: 3, valid: true */ /* 3 */
+        /* arg 2: v0, type: Vtx, value: 0, valid: true */ /* 0 */
     /* 0x00 */ gsSPVertex((Vtx *)0x08015540, 3, 0), /* packets: 1 */
 
     /* SP1Triangle (70), gsSP1Triangle */
     /* 0500020400000000 */
     /* arg_count: 4 */
-        /* arg 0: v0, value: 0, valid: true */
-        /* arg 1: v1, value: 1, valid: true */
-        /* arg 2: v2, value: 2, valid: true */
-        /* arg 3: flag, value: 0, valid: true */
+        /* arg 0: v0, type: Vtx, value: 0, valid: true */ /* 0 */
+        /* arg 1: v1, type: Vtx, value: 1, valid: true */ /* 1 */
+        /* arg 2: v2, type: Vtx, value: 2, valid: true */ /* 2 */
+        /* arg 3: flag, type: Vtxflag, value: 0, valid: true */ /* 0 */
     /* 0x08 */ gsSP1Triangle(0, 1, 2, 0), /* packets: 1 */
 
     /* SPSetLights1 (98), gsSPSetLights1 */
     /* DB02000000000018DC08060A09000008DC08090A09000000 */
     /* arg_count: 1 */
-        /* arg 0: l, value: 0x09000000, valid: true */
+        /* arg 0: l, type: Lightsn, value: 0x09000000, valid: true */ /* *(Lightsn *)0x09000000 */
     /* 0x10 */ gsSPSetLights1(*(Lightsn *)0x09000000), /* packets: 3 */
 
     /* SPEndDisplayList (78), gsSPEndDisplayList */
@@ -268,12 +268,17 @@ fn test_macro_info() {
         let arg_count = info.arg_count();
         printer.write_str(&format!("    /* arg_count: {arg_count} */\n"));
         for i in 0..arg_count {
+            let arg_type = info.arg_type(i).unwrap();
             let arg_name = info.arg_name(i).unwrap();
             let arg_value = info.arg_value(i).unwrap();
             let arg_valid = info.arg_valid(i).unwrap();
             printer.write_str(&format!(
-                "        /* arg {i}: {arg_name}, value: {arg_value}, valid: {arg_valid} */\n"
+                "        /* arg {i}: {arg_name}, type: {arg_type}, value: {arg_value}, valid: {arg_valid} */"
             ));
+
+            printer.write_str(" /* ");
+            printer.write_arg_value(arg_type, &arg_value);
+            printer.write_str(" */\n");
         }
 
         // The actual macro

@@ -3,7 +3,7 @@
 
 use core::{ffi::CStr, fmt, slice};
 
-use crate::MacroId;
+use crate::{ArgType, MacroId};
 
 const SIZEOF_GFX: usize = 8;
 
@@ -89,10 +89,21 @@ impl MacroInfo {
         count as _
     }
 
-    // arg_type
+    /// Returns a number that identifies the type of the argument with index
+    /// `arg_num`, or `None` if `arg_num` is larger than the argument count for
+    /// the current macro
+    pub fn arg_type(&self, arg_num: u32) -> Option<ArgType> {
+        if arg_num >= self.arg_count() {
+            return None;
+        }
+
+        let arg_type_raw = unsafe { gfxd_sys::macro_info::gfxd_arg_type(arg_num as _) };
+
+        ArgType::from_u32(arg_type_raw as _)
+    }
 
     /// Returns the name of the argument with index `arg_num` or `None` if
-    /// `arg_num` is bigger than the argument count for the current macro.
+    /// `arg_num` is larger than the argument count for the current macro.
     ///
     /// Argument names are not canonical, nor are they needed for macro
     /// disassembly, but they can be useful for informational and diagnostic
@@ -129,6 +140,7 @@ impl MacroInfo {
         }
     }
 
+    // TODO
     // value_by_type
 
     /// Returns `Some(true)` if the argument with index `arg_num` is "valid",
@@ -158,6 +170,16 @@ pub enum ArgValue {
     I(i32),
     U(u32),
     F(f32),
+}
+
+impl ArgValue {
+    pub(crate) fn to_gfxd_value(&self) -> (gfxd_sys::macro_info::ArgFmt, gfxd_sys::macro_info::gfxd_value_t) {
+        match *self {
+            ArgValue::I(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_i, gfxd_sys::macro_info::gfxd_value_t{i: x}),
+            ArgValue::U(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_u, gfxd_sys::macro_info::gfxd_value_t{u: x}),
+            ArgValue::F(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_f, gfxd_sys::macro_info::gfxd_value_t{f: x}),
+        }
+    }
 }
 
 impl fmt::Display for ArgValue {

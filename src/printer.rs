@@ -3,7 +3,7 @@
 
 use gfxd_sys::ptr::NonNullConst;
 
-use crate::MacroFnRet;
+use crate::{ArgType, ArgValue, MacroFnRet};
 
 pub struct Printer {
     // Placeholder to avoid constructing this type
@@ -28,6 +28,15 @@ impl Printer {
             gfxd_sys::custom_output::gfxd_write(buf, s.len() as _);
         }
     }
+
+    pub fn write_arg_value(&mut self, typ: ArgType, value: &ArgValue) {
+        let (_, v) = value.to_gfxd_value();
+        let ptr = NonNullConst::from_ref(&v);
+
+        unsafe {
+            gfxd_sys::custom_output::gfxd_print_value(typ.into(), ptr);
+        }
+    }
 }
 
 impl MacroPrinter {
@@ -40,6 +49,10 @@ impl MacroPrinter {
 
     pub fn write_str(&mut self, s: &str) {
         self.printer.write_str(s);
+    }
+
+    pub fn write_arg_value(&mut self, typ: ArgType, value: &ArgValue) {
+        self.printer.write_arg_value(typ, value);
     }
 
     pub fn macro_dflt(&mut self) -> MacroFnRet {

@@ -60,5 +60,3 @@
 ## Custom output
 
 ##### `int gfxd_puts(const char *str)`
-
-##### `int gfxd_print_value(int type, const gfxd_value_t *value)`
