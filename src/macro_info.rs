@@ -1,7 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{ffi::CStr, fmt, slice};
+use core::{
+    ffi::{self, CStr},
+    fmt, slice,
+};
+
+use gfxd_sys::{macro_info::gfxd_value_t, ptr::NonNullConst};
 
 use crate::{ArgType, MacroId};
 
@@ -92,6 +97,7 @@ impl MacroInfo {
     /// Returns a number that identifies the type of the argument with index
     /// `arg_num`, or `None` if `arg_num` is larger than the argument count for
     /// the current macro
+    #[must_use]
     pub fn arg_type(&self, arg_num: u32) -> Option<ArgType> {
         if arg_num >= self.arg_count() {
             return None;
@@ -128,16 +134,10 @@ impl MacroInfo {
             return None;
         }
 
-        let arg_value = unsafe { gfxd_sys::macro_info::gfxd_arg_value(arg_num as _) };
-        let arg_value = unsafe { arg_value.as_ref() };
+        let raw_value = unsafe { gfxd_sys::macro_info::gfxd_arg_value(arg_num as _) };
+        let raw_fmt = unsafe { gfxd_sys::macro_info::gfxd_arg_fmt(arg_num as _) };
 
-        let arg_fmt = unsafe { gfxd_sys::macro_info::gfxd_arg_fmt(arg_num as _) };
-        match arg_fmt as u32 {
-            gfxd_sys::macro_info::gfxd_argfmt_i => Some(ArgValue::I(unsafe { arg_value.i })),
-            gfxd_sys::macro_info::gfxd_argfmt_u => Some(ArgValue::U(unsafe { arg_value.u })),
-            gfxd_sys::macro_info::gfxd_argfmt_f => Some(ArgValue::F(unsafe { arg_value.f })),
-            _ => None,
-        }
+        ArgValue::new(raw_fmt, raw_value)
     }
 
     // TODO
@@ -173,11 +173,36 @@ pub enum ArgValue {
 }
 
 impl ArgValue {
-    pub(crate) fn to_gfxd_value(&self) -> (gfxd_sys::macro_info::ArgFmt, gfxd_sys::macro_info::gfxd_value_t) {
-        match *self {
-            ArgValue::I(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_i, gfxd_sys::macro_info::gfxd_value_t{i: x}),
-            ArgValue::U(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_u, gfxd_sys::macro_info::gfxd_value_t{u: x}),
-            ArgValue::F(x) => (gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_f, gfxd_sys::macro_info::gfxd_value_t{f: x}),
+    fn new(raw_fmt: ffi::c_int, raw_value: NonNullConst<gfxd_value_t>) -> Option<Self> {
+        let arg_value = unsafe { raw_value.as_ref() };
+
+        match raw_fmt as u32 {
+            gfxd_sys::macro_info::gfxd_argfmt_i => Some(Self::I(unsafe { arg_value.i })),
+            gfxd_sys::macro_info::gfxd_argfmt_u => Some(Self::U(unsafe { arg_value.u })),
+            gfxd_sys::macro_info::gfxd_argfmt_f => Some(Self::F(unsafe { arg_value.f })),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn to_gfxd_value(
+        self,
+    ) -> (
+        gfxd_sys::macro_info::ArgFmt,
+        gfxd_sys::macro_info::gfxd_value_t,
+    ) {
+        match self {
+            ArgValue::I(x) => (
+                gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_i,
+                gfxd_sys::macro_info::gfxd_value_t { i: x },
+            ),
+            ArgValue::U(x) => (
+                gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_u,
+                gfxd_sys::macro_info::gfxd_value_t { u: x },
+            ),
+            ArgValue::F(x) => (
+                gfxd_sys::macro_info::ArgFmt::gfxd_argfmt_f,
+                gfxd_sys::macro_info::gfxd_value_t { f: x },
+            ),
         }
     }
 }

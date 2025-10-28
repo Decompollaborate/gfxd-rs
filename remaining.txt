@@ -55,8 +55,3 @@
 
 ##### `void gfxd_enable(int cap)`
 ##### `void gfxd_disable(int cap)`
-
-
-## Custom output
-
-##### `int gfxd_puts(const char *str)`
