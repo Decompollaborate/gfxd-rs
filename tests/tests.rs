@@ -5,7 +5,8 @@ use pretty_assertions::assert_eq;
 use std::{collections::HashMap, iter::FromIterator};
 
 use gfxd_rs::{
-    Address, Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode, Printer, TexFmt, TexSiz, TlutCount
+    Address, Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode,
+    Printer, TexFmt, TexSiz, TlutCount,
 };
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -14,6 +15,8 @@ struct Tracker {
     timg: HashMap<Address, (TexFmt, TexSiz, u8, u8, u8)>,
     cimg: HashMap<Address, (TexFmt, TexSiz, u16)>,
     zimg: HashMap<Address, ()>,
+    dl: HashMap<Address, ()>,
+    mtx: HashMap<Address, ()>,
     vtx: HashMap<Address, i32>,
 }
 
@@ -383,6 +386,24 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     };
     customizer.zimg_callback(&mut zimg_callback);
 
+    let mut dl_tracker = HashMap::new();
+    let mut dl_callback = |printer: &mut Printer, _info: &mut _, dl| {
+        dl_tracker.insert(dl, ());
+
+        printer.write_str(&format!("D_{dl}"));
+        DoDefaultOutput::Override
+    };
+    customizer.dl_callback(&mut dl_callback);
+
+    let mut mtx_tracker = HashMap::new();
+    let mut mtx_callback = |printer: &mut Printer, _info: &mut _, mtx| {
+        mtx_tracker.insert(mtx, ());
+
+        printer.write_str(&format!("D_{mtx}"));
+        DoDefaultOutput::Override
+    };
+    customizer.mtx_callback(&mut mtx_callback);
+
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
@@ -399,6 +420,8 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
         timg: timg_tracker,
         cimg: cimg_tracker,
         zimg: zimg_tracker,
+        dl: dl_tracker,
+        mtx: mtx_tracker,
         vtx: vtx_tracker,
     };
     (out, tracker)
@@ -545,7 +568,7 @@ fn test_image_callback_ci8() {
 }
 
 #[test]
-fn test_frame_buffer() {
+fn test_framebuffer() {
     static INPUT: [u8; 0x18] = [
         0xFF, 0x10, 0x01, 0x3F, 0x80, 0x80, 0x00, 0x00, //
         0xFE, 0x00, 0x00, 0x00, 0x80, 0x90, 0x00, 0x00, //
@@ -565,6 +588,32 @@ fn test_frame_buffer() {
     let expected_tracker = Tracker {
         cimg: HashMap::from_iter([(Address(0x80800000), (TexFmt::Rgba, TexSiz::Siz16b, 320))]),
         zimg: HashMap::from_iter([(Address(0x80900000), ())]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
+}
+
+#[test]
+fn test_dl_mtx() {
+    static INPUT: [u8; 0x18] = [
+        0xDE, 0x00, 0x00, 0x00, 0x05, 0x00, 0x02, 0x00, //
+        0xDA, 0x38, 0x00, 0x07, 0x05, 0x00, 0x04, 0x00, //
+        0xDE, 0x01, 0x00, 0x00, 0x05, 0x00, 0x06, 0x00, //
+    ];
+    static OUTPUT: &str = "\
+{
+    gsSPDisplayList(D_05000200),
+    gsSPMatrix(D_05000400, G_MTX_NOPUSH | G_MTX_LOAD | G_MTX_PROJECTION),
+    gsSPBranchList(D_05000600),
+}
+";
+
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    assert_eq!(OUTPUT, out);
+
+    let expected_tracker = Tracker {
+        dl: HashMap::from_iter([(Address(0x05000200), ()), (Address(0x05000600), ())]),
+        mtx: HashMap::from_iter([(Address(0x05000400), ())]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);

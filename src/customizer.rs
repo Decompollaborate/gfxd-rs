@@ -5,7 +5,9 @@ use core::{ffi, slice};
 
 use gfxd_sys::ptr::NonNullConst;
 
-use crate::{Address, MacroInfo, MacroPrinter, Printer, TexFmt, TexSiz, TlutCount, lib_data::LibData};
+use crate::{
+    lib_data::LibData, Address, MacroInfo, MacroPrinter, Printer, TexFmt, TexSiz, TlutCount,
+};
 
 // 'cls is short for closure
 #[allow(clippy::type_complexity)]
@@ -48,7 +50,10 @@ pub struct Customizer<'cls> {
         ) -> DoDefaultOutput,
     >,
     zimg_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
-    vtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput>,
+    dl_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
+    mtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
+    vtx_fn:
+        Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput>,
 }
 
 impl Customizer<'_> {
@@ -254,6 +259,54 @@ impl Customizer<'_> {
             }
         }
 
+        if self.dl_fn.is_some() {
+            extern "C" fn callback(dl: u32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().dl_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let dl = Address(dl);
+                    (closure)(&mut printer, &mut info, dl)
+                } else {
+                    panic!("dl_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_dl_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_dl_callback(None);
+            }
+        }
+
+        if self.mtx_fn.is_some() {
+            extern "C" fn callback(mtx: u32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().mtx_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let mtx = Address(mtx);
+                    (closure)(&mut printer, &mut info, mtx)
+                } else {
+                    panic!("mtx_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_mtx_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_mtx_callback(None);
+            }
+        }
+
         if self.vtx_fn.is_some() {
             extern "C" fn callback(vtx: u32, num: i32) -> ffi::c_int {
                 let lib_data = LibData::get().expect("Welp. Maybe race condition?");
@@ -291,6 +344,8 @@ impl Customizer<'_> {
             timg_fn: None,
             cimg_fn: None,
             zimg_fn: None,
+            dl_fn: None,
+            mtx_fn: None,
             vtx_fn: None,
         }
     }
@@ -346,7 +401,16 @@ impl<'cls> Customizer<'cls> {
 
     pub fn timg_callback<F>(&mut self, callback: &'cls mut F)
     where
-        F: FnMut(&mut Printer, &mut MacroInfo, Address, TexFmt, TexSiz, u8, u8, u8) -> DoDefaultOutput,
+        F: FnMut(
+            &mut Printer,
+            &mut MacroInfo,
+            Address,
+            TexFmt,
+            TexSiz,
+            u8,
+            u8,
+            u8,
+        ) -> DoDefaultOutput,
     {
         self.timg_fn = Some(callback);
     }
@@ -365,21 +429,19 @@ impl<'cls> Customizer<'cls> {
         self.zimg_fn = Some(callback);
     }
 
-    /*
     pub fn dl_callback<F>(&mut self, callback: &'cls mut F)
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
-        self.zimg_fn = Some(callback);
+        self.dl_fn = Some(callback);
     }
 
     pub fn mtx_callback<F>(&mut self, callback: &'cls mut F)
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
-        self.zimg_fn = Some(callback);
+        self.mtx_fn = Some(callback);
     }
-    */
 
     pub fn vtx_callback<F>(&mut self, callback: &'cls mut F)
     where
