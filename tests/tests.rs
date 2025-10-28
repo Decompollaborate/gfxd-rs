@@ -319,15 +319,16 @@ fn test_macro_info() {
     assert_eq!(OUTPUT, out);
 }
 
-fn image_callback_common(
-    input: &[u8],
-    microcode: Microcode,
-) -> (
-    String,
-    HashMap<u32, (Option<u8>, TlutCount)>,
-    HashMap<u32, (TexFmt, TexSiz, u8, u8, u8)>,
-    HashMap<u32, i32>,
-) {
+#[derive(Debug, Default, PartialEq, Eq)]
+struct Tracker {
+    tlut: HashMap<u32, (Option<u8>, TlutCount)>,
+    timg: HashMap<u32, (TexFmt, TexSiz, u8, u8, u8)>,
+    cimg: HashMap<u32, (TexFmt, TexSiz, u16)>,
+    zimg: HashMap<u32, ()>,
+    vtx: HashMap<u32, i32>,
+}
+
+fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut customizer = Customizer::new();
 
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
@@ -365,6 +366,24 @@ fn image_callback_common(
         };
     customizer.timg_callback(&mut timg_callback);
 
+    let mut cimg_tracker = HashMap::new();
+    let mut cimg_callback = |printer: &mut Printer, _info: &mut _, cimg, fmt, siz, width| {
+        cimg_tracker.insert(cimg, (fmt, siz, width));
+
+        printer.write_str(&format!("D_{cimg:08X}"));
+        DoDefaultOutput::Override
+    };
+    customizer.cimg_callback(&mut cimg_callback);
+
+    let mut zimg_tracker = HashMap::new();
+    let mut zimg_callback = |printer: &mut Printer, _info: &mut _, zimg| {
+        zimg_tracker.insert(zimg, ());
+
+        printer.write_str(&format!("D_{zimg:08X}"));
+        DoDefaultOutput::Override
+    };
+    customizer.zimg_callback(&mut zimg_callback);
+
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
@@ -376,7 +395,14 @@ fn image_callback_common(
 
     let out = Disassembler::new().disassemble(input, microcode, &mut customizer);
 
-    (out, tlut_tracker, timg_tracker, vtx_tracker)
+    let tracker = Tracker {
+        tlut: tlut_tracker,
+        timg: timg_tracker,
+        cimg: cimg_tracker,
+        zimg: zimg_tracker,
+        vtx: vtx_tracker,
+    };
+    (out, tracker)
 }
 
 #[test]
@@ -437,18 +463,16 @@ fn test_image_callback_ci4() {
 }
 ";
 
-    let (out, tlut_tracker, timg_tracker, vtx_tracker) =
-        image_callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
     assert_eq!(OUTPUT, out);
-    assert_eq!(
-        HashMap::from_iter([(0x06002000, (Some(0), TlutCount::Pal16))]),
-        tlut_tracker
-    );
-    assert_eq!(
-        HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
-        timg_tracker
-    );
-    assert_eq!(HashMap::from_iter([(0x06006000, 4)]), vtx_tracker);
+
+    let expected_tracker = Tracker {
+        tlut: HashMap::from_iter([(0x06002000, (Some(0), TlutCount::Pal16))]),
+        timg: HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
+        vtx: HashMap::from_iter([(0x06006000, 4)]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
 }
 
 #[test]
@@ -509,16 +533,40 @@ fn test_image_callback_ci8() {
 }
 ";
 
-    let (out, tlut_tracker, timg_tracker, vtx_tracker) =
-        image_callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
     assert_eq!(OUTPUT, out);
-    assert_eq!(
-        HashMap::from_iter([(0x06002000, (None, TlutCount::Pal256))]),
-        tlut_tracker
-    );
-    assert_eq!(
-        HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
-        timg_tracker
-    );
-    assert_eq!(HashMap::from_iter([(0x06006000, 4)]), vtx_tracker);
+
+    let expected_tracker = Tracker {
+        tlut: HashMap::from_iter([(0x06002000, (None, TlutCount::Pal256))]),
+        timg: HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
+        vtx: HashMap::from_iter([(0x06006000, 4)]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
+}
+
+#[test]
+fn test_frame_buffer() {
+    static INPUT: [u8; 0x18] = [
+        0xFF, 0x10, 0x01, 0x3F, 0x80, 0x80, 0x00, 0x00, //
+        0xFE, 0x00, 0x00, 0x00, 0x80, 0x90, 0x00, 0x00, //
+        0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+    ];
+    static OUTPUT: &str = "\
+{
+    gsDPSetColorImage(G_IM_FMT_RGBA, G_IM_SIZ_16b, 320, D_80800000),
+    gsDPSetDepthImage(D_80900000),
+    gsSPEndDisplayList(),
+}
+";
+
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    assert_eq!(OUTPUT, out);
+
+    let expected_tracker = Tracker {
+        cimg: HashMap::from_iter([(0x80800000, (TexFmt::Rgba, TexSiz::Siz16b, 320))]),
+        zimg: HashMap::from_iter([(0x80900000, ())]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
 }

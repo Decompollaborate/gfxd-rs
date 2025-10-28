@@ -37,6 +37,17 @@ pub struct Customizer<'cls> {
             u8,
         ) -> DoDefaultOutput,
     >,
+    cimg_fn: Option<
+        &'cls mut dyn FnMut(
+            &mut Printer,
+            &mut MacroInfo,
+            u32,
+            TexFmt,
+            TexSiz,
+            u16,
+        ) -> DoDefaultOutput,
+    >,
+    zimg_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32) -> DoDefaultOutput>,
     vtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32) -> DoDefaultOutput>,
 }
 
@@ -191,6 +202,54 @@ impl Customizer<'_> {
             }
         }
 
+        if self.cimg_fn.is_some() {
+            extern "C" fn callback(cimg: u32, fmt: i32, siz: i32, width: i32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().cimg_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let tex_fmt = TexFmt::new(fmt);
+                    let tex_siz = TexSiz::new(siz);
+                    (closure)(&mut printer, &mut info, cimg, tex_fmt, tex_siz, width as _)
+                } else {
+                    panic!("cimg_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_cimg_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_cimg_callback(None);
+            }
+        }
+
+        if self.zimg_fn.is_some() {
+            extern "C" fn callback(zimg: u32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().zimg_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    (closure)(&mut printer, &mut info, zimg)
+                } else {
+                    panic!("zimg_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_zimg_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_zimg_callback(None);
+            }
+        }
+
         if self.vtx_fn.is_some() {
             extern "C" fn callback(vtx: u32, num: i32) -> ffi::c_int {
                 let lib_data = LibData::get().expect("Welp. Maybe race condition?");
@@ -225,6 +284,8 @@ impl Customizer<'_> {
             arg_fn: None,
             tlut_fn: None,
             timg_fn: None,
+            cimg_fn: None,
+            zimg_fn: None,
             vtx_fn: None,
         }
     }
@@ -283,6 +344,20 @@ impl<'cls> Customizer<'cls> {
         F: FnMut(&mut Printer, &mut MacroInfo, u32, TexFmt, TexSiz, u8, u8, u8) -> DoDefaultOutput,
     {
         self.timg_fn = Some(callback);
+    }
+
+    pub fn cimg_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, u32, TexFmt, TexSiz, u16) -> DoDefaultOutput,
+    {
+        self.cimg_fn = Some(callback);
+    }
+
+    pub fn zimg_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, u32) -> DoDefaultOutput,
+    {
+        self.zimg_fn = Some(callback);
     }
 
     pub fn vtx_callback<F>(&mut self, callback: &'cls mut F)
