@@ -134,7 +134,7 @@ fn test_vtx_callback() {
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
-    assert_eq!(vtx_tracker, HashMap::from_iter([(0x000002E0, 12)]));
+    assert_eq!(HashMap::from_iter([(0x000002E0, 12)]), vtx_tracker);
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn test_vtx_callback_default() {
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
-    assert_eq!(vtx_tracker, HashMap::from_iter([(0x000002E0, 12)]));
+    assert_eq!(HashMap::from_iter([(0x000002E0, 12)]), vtx_tracker);
 }
 
 #[test]
@@ -316,4 +316,118 @@ fn test_macro_info() {
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex2, &mut customizer);
     assert_eq!(OUTPUT, out);
+}
+
+#[test]
+fn test_image_callback() {
+    static INPUT: [u8; 0xF0] = [
+        0xE7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xE3, 0x00, 0x0A, 0x01, 0x00, 0x00, 0x00, 0x00, //
+        0xD9, 0x40, 0xFD, 0xFE, 0x00, 0x00, 0x00, 0x00, //
+        0xD9, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x04, 0x04, //
+        0xD7, 0x00, 0x00, 0x02, 0x80, 0x00, 0x80, 0x00, //
+        0xFC, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC, 0xF2, 0x79, //
+        0xE3, 0x00, 0x17, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xE2, 0x00, 0x00, 0x1C, 0x00, 0x50, 0x42, 0x40, //
+        0xE2, 0x00, 0x1E, 0x01, 0x00, 0x00, 0x00, 0x01, //
+        0xFD, 0x10, 0x00, 0x00, 0x06, 0x00, 0x20, 0x00, //
+        0xE8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xF5, 0x00, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00, //
+        0xE6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xF0, 0x00, 0x00, 0x00, 0x07, 0x03, 0xC0, 0x00, //
+        0xE7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xFD, 0x50, 0x00, 0x00, 0x06, 0x00, 0x40, 0x00, //
+        0xF5, 0x50, 0x00, 0x00, 0x07, 0x09, 0x42, 0x50, //
+        0xE6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xF3, 0x00, 0x00, 0x00, 0x07, 0x0F, 0xF4, 0x00, //
+        0xE7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xF5, 0x40, 0x04, 0x00, 0x00, 0x09, 0x42, 0x50, //
+        0xF2, 0x00, 0x00, 0x00, 0x00, 0x07, 0xC0, 0x7C, //
+        0xE3, 0x00, 0x10, 0x01, 0x00, 0x00, 0x80, 0x00, //
+        0xE3, 0x00, 0x12, 0x01, 0x00, 0x00, 0x20, 0x00, //
+        0xE3, 0x00, 0x0C, 0x00, 0x00, 0x08, 0x00, 0x00, //
+        0xE3, 0x00, 0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xE3, 0x00, 0x0D, 0x01, 0x00, 0x00, 0x00, 0x00, //
+        0x01, 0x00, 0x40, 0x08, 0x06, 0x00, 0x60, 0x00, //
+        0x06, 0x04, 0x00, 0x02, 0x00, 0x06, 0x02, 0x00, //
+        0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+    ];
+    static OUTPUT: &str = "\
+{
+    gsDPPipeSync(),
+    gsDPSetCycleType(G_CYC_1CYCLE),
+    gsSPClearGeometryMode(G_ZBUFFER | G_CULL_FRONT | G_FOG | G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR | G_LOD | G_SHADING_SMOOTH | G_CLIPPING),
+    gsSPSetGeometryMode(G_SHADE | G_CULL_BACK),
+    gsSPTexture(0x8000, 0x8000, 0, G_TX_RENDERTILE, G_ON),
+    gsDPSetCombineMode(G_CC_DECALRGBA, G_CC_DECALRGBA),
+    gsDPSetCombineKey(G_CK_NONE),
+    gsDPSetRenderMode(G_RM_XLU_SURF, G_RM_XLU_SURF2),
+    gsDPSetAlphaCompare(G_AC_THRESHOLD),
+    gsDPLoadTLUT_pal16(0, D_06002000),
+    gsDPLoadTextureBlock_4b(D_06004000, G_IM_FMT_CI, 32, 32, 0, G_TX_NOMIRROR | G_TX_CLAMP, G_TX_NOMIRROR | G_TX_CLAMP, 5, 5, G_TX_NOLOD, G_TX_NOLOD),
+    gsDPSetTextureLUT(G_TT_RGBA16),
+    gsDPSetTextureFilter(G_TF_BILERP),
+    gsDPSetTexturePersp(G_TP_PERSP),
+    gsDPSetTextureLOD(G_TL_TILE),
+    gsDPSetTextureDetail(G_TD_CLAMP),
+    gsSPVertex(D_06006000, 4, 0),
+    gsSP2Triangles(2, 0, 1, 0, 3, 1, 0, 0),
+    gsSPEndDisplayList(),
+}
+";
+
+    let mut customizer = Customizer::new();
+
+    let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
+        printer.write_str("    ");
+        let ret = printer.macro_dflt();
+        printer.write_str(",\n");
+        ret
+    };
+    customizer.macro_fn(&mut macro_fn);
+
+    let mut before = |printer: &mut Printer| {
+        printer.write_str("{\n");
+    };
+    let mut after = |printer: &mut Printer| {
+        printer.write_str("}\n");
+    };
+    customizer.before_after_execution_callback(&mut before, &mut after);
+
+    let mut tlut_tracker = HashMap::new();
+    let mut tlut_callback = |printer: &mut Printer, _info: &mut _, tlut, idx, count| {
+        tlut_tracker.insert(tlut, (idx, count));
+
+        printer.write_str(&format!("D_{tlut:08X}"));
+        DoDefaultOutput::Override
+    };
+    customizer.tlut_callback(&mut tlut_callback);
+
+    let mut timg_tracker = HashMap::new();
+    let mut timg_callback =
+        |printer: &mut Printer, _info: &mut _, timg, fmt, siz, width, height, pal| {
+            timg_tracker.insert(timg, (fmt, siz, width, height, pal));
+
+            printer.write_str(&format!("D_{timg:08X}"));
+            DoDefaultOutput::Override
+        };
+    customizer.timg_callback(&mut timg_callback);
+
+    let mut vtx_tracker = HashMap::new();
+    let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
+        vtx_tracker.insert(vtx, num);
+
+        printer.write_str(&format!("D_{vtx:08X}"));
+        DoDefaultOutput::Override
+    };
+    customizer.vtx_callback(&mut vtx_callback);
+
+    let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex2, &mut customizer);
+    assert_eq!(OUTPUT, out);
+    assert_eq!(HashMap::from_iter([(0x06002000, (0, 16))]), tlut_tracker);
+    assert_eq!(
+        HashMap::from_iter([(0x06004000, (2, 0, 32, 32, 0))]),
+        timg_tracker
+    );
+    assert_eq!(HashMap::from_iter([(0x06006000, 4)]), vtx_tracker);
 }

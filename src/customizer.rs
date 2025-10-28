@@ -16,7 +16,20 @@ pub struct Customizer<'cls> {
     macro_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter, &mut MacroInfo) -> MacroFnRet>,
     arg_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter, &mut MacroInfo, i32)>,
 
-    // tlut_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32) -> DoDefaultOutput>,
+    tlut_fn:
+        Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32) -> DoDefaultOutput>,
+    timg_fn: Option<
+        &'cls mut dyn FnMut(
+            &mut Printer,
+            &mut MacroInfo,
+            u32,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+        ) -> DoDefaultOutput,
+    >,
     vtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32) -> DoDefaultOutput>,
 }
 
@@ -105,6 +118,59 @@ impl Customizer<'_> {
     }
 
     fn apply_user_arg_callbacks(&mut self) {
+        if self.tlut_fn.is_some() {
+            extern "C" fn callback(tlut: u32, idx: i32, count: i32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().tlut_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    (closure)(&mut printer, &mut info, tlut, idx, count)
+                } else {
+                    panic!("tlut_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_tlut_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_tlut_callback(None);
+            }
+        }
+
+        if self.timg_fn.is_some() {
+            extern "C" fn callback(
+                timg: u32,
+                fmt: i32,
+                siz: i32,
+                width: i32,
+                height: i32,
+                pal: i32,
+            ) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().timg_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    (closure)(&mut printer, &mut info, timg, fmt, siz, width, height, pal)
+                } else {
+                    panic!("timg_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_timg_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_timg_callback(None);
+            }
+        }
+
         if self.vtx_fn.is_some() {
             extern "C" fn callback(vtx: u32, num: i32) -> ffi::c_int {
                 let lib_data = LibData::get().expect("Welp. Maybe race condition?");
@@ -137,7 +203,8 @@ impl Customizer<'_> {
             after_execution: None,
             macro_fn: None,
             arg_fn: None,
-            // tlut_fn: None,
+            tlut_fn: None,
+            timg_fn: None,
             vtx_fn: None,
         }
     }
@@ -184,14 +251,19 @@ impl<'cls> Customizer<'cls> {
 }
 
 impl<'cls> Customizer<'cls> {
-    /*
-    pub fn tlut_callback<F>(&mut self, callback: F)
+    pub fn tlut_callback<F>(&mut self, callback: &'cls mut F)
     where
-        F: FnMut(&Printer, u32, i32, i32) -> DoDefaultOutput + 'static,
+        F: FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32) -> DoDefaultOutput,
     {
-        self.tlut_fn = Some(Box::new(callback));
+        self.tlut_fn = Some(callback);
     }
-    */
+
+    pub fn timg_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32, i32, i32, i32) -> DoDefaultOutput,
+    {
+        self.timg_fn = Some(callback);
+    }
 
     pub fn vtx_callback<F>(&mut self, callback: &'cls mut F)
     where

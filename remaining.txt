@@ -2,11 +2,6 @@
 
 ##### `int gfxd_arg_callbacks(int arg_num)`
 
-##### `typedef int gfxd_tlut_fn_t(uint32_t tlut, int32_t idx, int32_t count)`
-##### `void gfxd_tlut_callback(gfxd_tlut_fn_t *fn)`
-
-##### `typedef int gfxd_timg_fn_t(uint32_t timg, int32_t fmt, int32_t siz, int32_t width, int32_t height, int32_t pal)`
-##### `void gfxd_timg_callback(gfxd_timg_fn_t *fn)`
 
 ##### `typedef int gfxd_cimg_fn_t(uint32_t cimg, int32_t fmt, int32_t siz, int32_t width)`
 ##### `void gfxd_cimg_callback(gfxd_cimg_fn_t *fn)`
