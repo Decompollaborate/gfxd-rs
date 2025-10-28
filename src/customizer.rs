@@ -5,7 +5,7 @@ use core::{ffi, slice};
 
 use gfxd_sys::ptr::NonNullConst;
 
-use crate::{lib_data::LibData, MacroInfo, MacroPrinter, Printer};
+use crate::{lib_data::LibData, MacroInfo, MacroPrinter, Printer, TexFmt, TexSiz, TlutCount};
 
 // 'cls is short for closure
 #[allow(clippy::type_complexity)]
@@ -16,18 +16,25 @@ pub struct Customizer<'cls> {
     macro_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter, &mut MacroInfo) -> MacroFnRet>,
     arg_fn: Option<&'cls mut dyn FnMut(&mut MacroPrinter, &mut MacroInfo, i32)>,
 
-    tlut_fn:
-        Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32) -> DoDefaultOutput>,
+    tlut_fn: Option<
+        &'cls mut dyn FnMut(
+            &mut Printer,
+            &mut MacroInfo,
+            u32,
+            Option<u8>,
+            TlutCount,
+        ) -> DoDefaultOutput,
+    >,
     timg_fn: Option<
         &'cls mut dyn FnMut(
             &mut Printer,
             &mut MacroInfo,
             u32,
-            i32,
-            i32,
-            i32,
-            i32,
-            i32,
+            TexFmt,
+            TexSiz,
+            u8,
+            u8,
+            u8,
         ) -> DoDefaultOutput,
     >,
     vtx_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, u32, i32) -> DoDefaultOutput>,
@@ -125,7 +132,9 @@ impl Customizer<'_> {
                 let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().tlut_fn {
                     let mut printer = Printer::new();
                     let mut info = MacroInfo::new();
-                    (closure)(&mut printer, &mut info, tlut, idx, count)
+                    let index = if idx == -1 { None } else { Some(idx as u8) };
+                    let tlut_count = TlutCount::new(count);
+                    (closure)(&mut printer, &mut info, tlut, index, tlut_count)
                 } else {
                     panic!("tlut_fn closure was None?")
                 };
@@ -155,7 +164,18 @@ impl Customizer<'_> {
                 let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().timg_fn {
                     let mut printer = Printer::new();
                     let mut info = MacroInfo::new();
-                    (closure)(&mut printer, &mut info, timg, fmt, siz, width, height, pal)
+                    let tex_fmt = TexFmt::new(fmt);
+                    let tex_siz = TexSiz::new(siz);
+                    (closure)(
+                        &mut printer,
+                        &mut info,
+                        timg,
+                        tex_fmt,
+                        tex_siz,
+                        width as _,
+                        height as _,
+                        pal as _,
+                    )
                 } else {
                     panic!("timg_fn closure was None?")
                 };
@@ -253,14 +273,14 @@ impl<'cls> Customizer<'cls> {
 impl<'cls> Customizer<'cls> {
     pub fn tlut_callback<F>(&mut self, callback: &'cls mut F)
     where
-        F: FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32) -> DoDefaultOutput,
+        F: FnMut(&mut Printer, &mut MacroInfo, u32, Option<u8>, TlutCount) -> DoDefaultOutput,
     {
         self.tlut_fn = Some(callback);
     }
 
     pub fn timg_callback<F>(&mut self, callback: &'cls mut F)
     where
-        F: FnMut(&mut Printer, &mut MacroInfo, u32, i32, i32, i32, i32, i32) -> DoDefaultOutput,
+        F: FnMut(&mut Printer, &mut MacroInfo, u32, TexFmt, TexSiz, u8, u8, u8) -> DoDefaultOutput,
     {
         self.timg_fn = Some(callback);
     }
