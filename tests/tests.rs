@@ -5,9 +5,17 @@ use pretty_assertions::assert_eq;
 use std::{collections::HashMap, iter::FromIterator};
 
 use gfxd_rs::{
-    Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode, Printer, TexFmt,
-    TexSiz, TlutCount,
+    Address, Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode, Printer, TexFmt, TexSiz, TlutCount
 };
+
+#[derive(Debug, Default, PartialEq, Eq)]
+struct Tracker {
+    tlut: HashMap<Address, (Option<u8>, TlutCount)>,
+    timg: HashMap<Address, (TexFmt, TexSiz, u8, u8, u8)>,
+    cimg: HashMap<Address, (TexFmt, TexSiz, u16)>,
+    zimg: HashMap<Address, ()>,
+    vtx: HashMap<Address, i32>,
+}
 
 #[test]
 fn test_basic() {
@@ -128,14 +136,14 @@ fn test_vtx_callback() {
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
-        printer.write_str(&format!("D_{vtx:08X}"));
+        printer.write_str(&format!("D_{vtx}"));
         DoDefaultOutput::Override
     };
     customizer.vtx_callback(&mut vtx_callback);
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
-    assert_eq!(HashMap::from_iter([(0x000002E0, 12)]), vtx_tracker);
+    assert_eq!(HashMap::from_iter([(Address(0x000002E0), 12)]), vtx_tracker);
 }
 
 #[test]
@@ -201,7 +209,7 @@ fn test_vtx_callback_default() {
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
-    assert_eq!(HashMap::from_iter([(0x000002E0, 12)]), vtx_tracker);
+    assert_eq!(HashMap::from_iter([(Address(0x000002E0), 12)]), vtx_tracker);
 }
 
 #[test]
@@ -319,15 +327,6 @@ fn test_macro_info() {
     assert_eq!(OUTPUT, out);
 }
 
-#[derive(Debug, Default, PartialEq, Eq)]
-struct Tracker {
-    tlut: HashMap<u32, (Option<u8>, TlutCount)>,
-    timg: HashMap<u32, (TexFmt, TexSiz, u8, u8, u8)>,
-    cimg: HashMap<u32, (TexFmt, TexSiz, u16)>,
-    zimg: HashMap<u32, ()>,
-    vtx: HashMap<u32, i32>,
-}
-
 fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut customizer = Customizer::new();
 
@@ -351,7 +350,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut tlut_callback = |printer: &mut Printer, _info: &mut _, tlut, index, count| {
         tlut_tracker.insert(tlut, (index, count));
 
-        printer.write_str(&format!("D_{tlut:08X}"));
+        printer.write_str(&format!("D_{tlut}"));
         DoDefaultOutput::Override
     };
     customizer.tlut_callback(&mut tlut_callback);
@@ -361,7 +360,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
         |printer: &mut Printer, _info: &mut _, timg, fmt, siz, width, height, pal| {
             timg_tracker.insert(timg, (fmt, siz, width, height, pal));
 
-            printer.write_str(&format!("D_{timg:08X}"));
+            printer.write_str(&format!("D_{timg}"));
             DoDefaultOutput::Override
         };
     customizer.timg_callback(&mut timg_callback);
@@ -370,7 +369,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut cimg_callback = |printer: &mut Printer, _info: &mut _, cimg, fmt, siz, width| {
         cimg_tracker.insert(cimg, (fmt, siz, width));
 
-        printer.write_str(&format!("D_{cimg:08X}"));
+        printer.write_str(&format!("D_{cimg}"));
         DoDefaultOutput::Override
     };
     customizer.cimg_callback(&mut cimg_callback);
@@ -379,7 +378,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut zimg_callback = |printer: &mut Printer, _info: &mut _, zimg| {
         zimg_tracker.insert(zimg, ());
 
-        printer.write_str(&format!("D_{zimg:08X}"));
+        printer.write_str(&format!("D_{zimg}"));
         DoDefaultOutput::Override
     };
     customizer.zimg_callback(&mut zimg_callback);
@@ -388,7 +387,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
-        printer.write_str(&format!("D_{vtx:08X}"));
+        printer.write_str(&format!("D_{vtx}"));
         DoDefaultOutput::Override
     };
     customizer.vtx_callback(&mut vtx_callback);
@@ -467,9 +466,9 @@ fn test_image_callback_ci4() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        tlut: HashMap::from_iter([(0x06002000, (Some(0), TlutCount::Pal16))]),
-        timg: HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
-        vtx: HashMap::from_iter([(0x06006000, 4)]),
+        tlut: HashMap::from_iter([(Address(0x06002000), (Some(0), TlutCount::Pal16))]),
+        timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
+        vtx: HashMap::from_iter([(Address(0x06006000), 4)]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -537,9 +536,9 @@ fn test_image_callback_ci8() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        tlut: HashMap::from_iter([(0x06002000, (None, TlutCount::Pal256))]),
-        timg: HashMap::from_iter([(0x06004000, (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
-        vtx: HashMap::from_iter([(0x06006000, 4)]),
+        tlut: HashMap::from_iter([(Address(0x06002000), (None, TlutCount::Pal256))]),
+        timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
+        vtx: HashMap::from_iter([(Address(0x06006000), 4)]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -564,8 +563,8 @@ fn test_frame_buffer() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        cimg: HashMap::from_iter([(0x80800000, (TexFmt::Rgba, TexSiz::Siz16b, 320))]),
-        zimg: HashMap::from_iter([(0x80900000, ())]),
+        cimg: HashMap::from_iter([(Address(0x80800000), (TexFmt::Rgba, TexSiz::Siz16b, 320))]),
+        zimg: HashMap::from_iter([(Address(0x80900000), ())]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
