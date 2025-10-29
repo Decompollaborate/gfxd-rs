@@ -22,5 +22,5 @@ pub use disassembler::Disassembler;
 pub use macro_id::MacroId;
 pub use macro_info::{ArgValue, MacroInfo};
 pub use microcode::Microcode;
-pub use new_types::{Address, LookatCount, TexFmt, TexSiz, TlutCount};
+pub use new_types::{Address, LightsNum, LookatCount, TexFmt, TexSiz, TlutCount};
 pub use printer::{MacroPrinter, Printer};

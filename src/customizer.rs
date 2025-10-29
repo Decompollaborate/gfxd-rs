@@ -6,8 +6,8 @@ use core::{ffi, slice};
 use gfxd_sys::ptr::NonNullConst;
 
 use crate::{
-    lib_data::LibData, Address, LookatCount, MacroInfo, MacroPrinter, Printer, TexFmt, TexSiz,
-    TlutCount,
+    lib_data::LibData, Address, LightsNum, LookatCount, MacroInfo, MacroPrinter, Printer, TexFmt,
+    TexSiz, TlutCount,
 };
 
 // 'cls is short for closure
@@ -56,6 +56,12 @@ pub struct Customizer<'cls> {
     lookat_fn: Option<
         &'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, LookatCount) -> DoDefaultOutput,
     >,
+    light_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
+    lightsn_fn: Option<
+        &'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, LightsNum) -> DoDefaultOutput,
+    >,
+    seg_fn:
+        Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, u8) -> DoDefaultOutput>,
     vtx_fn:
         Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput>,
     vp_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
@@ -337,6 +343,79 @@ impl Customizer<'_> {
             }
         }
 
+        if self.light_fn.is_some() {
+            extern "C" fn callback(light: u32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().light_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let light = Address(light);
+                    (closure)(&mut printer, &mut info, light)
+                } else {
+                    panic!("light_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_light_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_light_callback(None);
+            }
+        }
+
+        if self.lightsn_fn.is_some() {
+            extern "C" fn callback(lightsn: u32, num: i32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().lightsn_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let lightsn = Address(lightsn);
+                    let num = LightsNum::new(num);
+                    (closure)(&mut printer, &mut info, lightsn, num)
+                } else {
+                    panic!("lightsn_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_lightsn_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_lightsn_callback(None);
+            }
+        }
+
+        if self.seg_fn.is_some() {
+            extern "C" fn callback(seg: u32, num: i32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().seg_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let seg = Address(seg);
+                    (closure)(&mut printer, &mut info, seg, num as _)
+                } else {
+                    panic!("seg_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_seg_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_seg_callback(None);
+            }
+        }
+
         if self.vtx_fn.is_some() {
             extern "C" fn callback(vtx: u32, num: i32) -> ffi::c_int {
                 let lib_data = LibData::get().expect("Welp. Maybe race condition?");
@@ -401,6 +480,9 @@ impl Customizer<'_> {
             dl_fn: None,
             mtx_fn: None,
             lookat_fn: None,
+            light_fn: None,
+            lightsn_fn: None,
+            seg_fn: None,
             vtx_fn: None,
             vp_fn: None,
         }
@@ -504,6 +586,27 @@ impl<'cls> Customizer<'cls> {
         F: FnMut(&mut Printer, &mut MacroInfo, Address, LookatCount) -> DoDefaultOutput,
     {
         self.lookat_fn = Some(callback);
+    }
+
+    pub fn light_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
+    {
+        self.light_fn = Some(callback);
+    }
+
+    pub fn lightsn_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address, LightsNum) -> DoDefaultOutput,
+    {
+        self.lightsn_fn = Some(callback);
+    }
+
+    pub fn seg_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address, u8) -> DoDefaultOutput,
+    {
+        self.seg_fn = Some(callback);
     }
 
     pub fn vtx_callback<F>(&mut self, callback: &'cls mut F)

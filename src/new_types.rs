@@ -108,3 +108,41 @@ impl LookatCount {
         }
     }
 }
+
+/// `NUMLIGHTS_0` is absent from this enum because it just expands to
+/// `NUMLIGHTS_1`, making them indistinguishable from each other.
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LightsNum {
+    #[doc(alias = "NUMLIGHTS_1")]
+    NumLights1 = 1,
+    #[doc(alias = "NUMLIGHTS_2")]
+    NumLights2 = 2,
+    #[doc(alias = "NUMLIGHTS_3")]
+    NumLights3 = 3,
+    #[doc(alias = "NUMLIGHTS_4")]
+    NumLights4 = 4,
+    #[doc(alias = "NUMLIGHTS_5")]
+    NumLights5 = 5,
+    #[doc(alias = "NUMLIGHTS_6")]
+    NumLights6 = 6,
+    #[doc(alias = "NUMLIGHTS_7")]
+    NumLights7 = 7,
+}
+
+impl LightsNum {
+    pub(crate) fn new(value: i32) -> Self {
+        match value {
+            1 => Self::NumLights1,
+            2 => Self::NumLights2,
+            3 => Self::NumLights3,
+            4 => Self::NumLights4,
+            5 => Self::NumLights5,
+            6 => Self::NumLights6,
+            7 => Self::NumLights7,
+            x => unreachable!(
+                "Oh, this shouldn't have had happen. Could you make a bug report? Value: {}",
+                x
+            ),
+        }
+    }
+}

@@ -5,8 +5,8 @@ use pretty_assertions::assert_eq;
 use std::{collections::HashMap, iter::FromIterator};
 
 use gfxd_rs::{
-    Address, Customizer, Disassembler, DoDefaultOutput, LookatCount, MacroInfo, MacroPrinter,
-    Microcode, Printer, TexFmt, TexSiz, TlutCount,
+    Address, Customizer, Disassembler, DoDefaultOutput, LightsNum, LookatCount, MacroInfo,
+    MacroPrinter, Microcode, Printer, TexFmt, TexSiz, TlutCount,
 };
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -18,6 +18,9 @@ struct Tracker {
     dl: HashMap<Address, ()>,
     mtx: HashMap<Address, ()>,
     lookat: HashMap<Address, (LookatCount,)>,
+    light: HashMap<Address, ()>,
+    lightsn: HashMap<Address, (LightsNum,)>,
+    seg: HashMap<Address, (u8,)>,
     vtx: HashMap<Address, (i32,)>,
     vp: HashMap<Address, ()>,
 }
@@ -415,6 +418,33 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     };
     customizer.lookat_callback(&mut lookat_callback);
 
+    let mut light_tracker = HashMap::new();
+    let mut light_callback = |printer: &mut Printer, _info: &mut _, light| {
+        light_tracker.insert(light, ());
+
+        printer.write_str(&format!("D_{light}"));
+        DoDefaultOutput::Override
+    };
+    customizer.light_callback(&mut light_callback);
+
+    let mut lightsn_tracker = HashMap::new();
+    let mut lightsn_callback = |printer: &mut Printer, _info: &mut _, lightsn, num| {
+        lightsn_tracker.insert(lightsn, (num,));
+
+        printer.write_str(&format!("D_{lightsn}"));
+        DoDefaultOutput::Override
+    };
+    customizer.lightsn_callback(&mut lightsn_callback);
+
+    let mut seg_tracker = HashMap::new();
+    let mut seg_callback = |printer: &mut Printer, _info: &mut _, seg, num| {
+        seg_tracker.insert(seg, (num,));
+
+        printer.write_str(&format!("D_{seg}"));
+        DoDefaultOutput::Override
+    };
+    customizer.seg_callback(&mut seg_callback);
+
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, (num,));
@@ -443,6 +473,9 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
         dl: dl_tracker,
         mtx: mtx_tracker,
         lookat: lookat_tracker,
+        light: light_tracker,
+        lightsn: lightsn_tracker,
+        seg: seg_tracker,
         vtx: vtx_tracker,
         vp: vp_tracker,
     };
@@ -678,18 +711,15 @@ fn test_look_at_viewport() {
 
 #[test]
 fn test_lights() {
-    static INPUT: [u8; 0x180] = [
+    static INPUT: [u8; 0x160] = [
         0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x02, 0x00, //
         0xDB, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, //
         0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x10, 0x08, //
         0xDC, 0x08, 0x09, 0x0A, 0x05, 0x00, 0x10, 0x00, //
-        0xDB, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, //
-        0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x20, 0x08, //
-        0xDC, 0x08, 0x09, 0x0A, 0x05, 0x00, 0x20, 0x00, //
         0xDB, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x30, //
-        0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x30, 0x08, //
-        0xDC, 0x08, 0x09, 0x0A, 0x05, 0x00, 0x30, 0x18, //
-        0xDC, 0x08, 0x0C, 0x0A, 0x05, 0x00, 0x30, 0x00, //
+        0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x20, 0x08, //
+        0xDC, 0x08, 0x09, 0x0A, 0x05, 0x00, 0x20, 0x18, //
+        0xDC, 0x08, 0x0C, 0x0A, 0x05, 0x00, 0x20, 0x00, //
         0xDB, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x48, //
         0xDC, 0x08, 0x06, 0x0A, 0x05, 0x00, 0x30, 0x08, //
         0xDC, 0x08, 0x09, 0x0A, 0x05, 0x00, 0x30, 0x18, //
@@ -726,19 +756,17 @@ fn test_lights() {
         0xDC, 0x08, 0x18, 0x0A, 0x05, 0x00, 0x70, 0x68, //
         0xDC, 0x08, 0x1B, 0x0A, 0x05, 0x00, 0x70, 0x00, //
         0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
     ];
     static OUTPUT: &str = "\
 {
-    gsSPLight(0x05000200, 1),
-    gsSPSetLights1(*(Lightsn *)0x05001000),
-    gsSPSetLights1(*(Lightsn *)0x05002000),
-    gsSPSetLights2(*(Lightsn *)0x05003000),
-    gsSPSetLights3(*(Lightsn *)0x05003000),
-    gsSPSetLights4(*(Lightsn *)0x05004000),
-    gsSPSetLights5(*(Lightsn *)0x05005000),
-    gsSPSetLights6(*(Lightsn *)0x05006000),
-    gsSPSetLights7(*(Lightsn *)0x05007000),
+    gsSPLight(D_05000200, 1),
+    gsSPSetLights1(D_05001000),
+    gsSPSetLights2(D_05002000),
+    gsSPSetLights3(D_05003000),
+    gsSPSetLights4(D_05004000),
+    gsSPSetLights5(D_05005000),
+    gsSPSetLights6(D_05006000),
+    gsSPSetLights7(D_05007000),
     gsSPEndDisplayList(),
 }
 ";
@@ -747,6 +775,16 @@ fn test_lights() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
+        light: HashMap::from_iter([(Address(0x05000200), ())]),
+        lightsn: HashMap::from_iter([
+            (Address(0x05001000), (LightsNum::NumLights1,)),
+            (Address(0x05002000), (LightsNum::NumLights2,)),
+            (Address(0x05003000), (LightsNum::NumLights3,)),
+            (Address(0x05004000), (LightsNum::NumLights4,)),
+            (Address(0x05005000), (LightsNum::NumLights5,)),
+            (Address(0x05006000), (LightsNum::NumLights6,)),
+            (Address(0x05007000), (LightsNum::NumLights7,)),
+        ]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -754,7 +792,7 @@ fn test_lights() {
 
 #[test]
 fn test_seg() {
-    static INPUT: [u8; 0x90] = [
+    static INPUT: [u8; 0x88] = [
         0xDB, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
         0xDB, 0x06, 0x00, 0x04, 0x00, 0x00, 0x10, 0x00, //
         0xDB, 0x06, 0x00, 0x08, 0x00, 0x00, 0x20, 0x00, //
@@ -772,26 +810,25 @@ fn test_seg() {
         0xDB, 0x06, 0x00, 0x38, 0x00, 0x00, 0xE0, 0x00, //
         0xDB, 0x06, 0x00, 0x3C, 0x00, 0x00, 0xF0, 0x00, //
         0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
     ];
     static OUTPUT: &str = "\
 {
-    gsSPSegment(0x00, 0x00000000),
-    gsSPSegment(0x01, 0x00001000),
-    gsSPSegment(0x02, 0x00002000),
-    gsSPSegment(0x03, 0x00003000),
-    gsSPSegment(0x04, 0x00004000),
-    gsSPSegment(0x05, 0x00005000),
-    gsSPSegment(0x06, 0x00006000),
-    gsSPSegment(0x07, 0x00007000),
-    gsSPSegment(0x08, 0x00008000),
-    gsSPSegment(0x09, 0x00009000),
-    gsSPSegment(0x0A, 0x0000A000),
-    gsSPSegment(0x0B, 0x0000B000),
-    gsSPSegment(0x0C, 0x0000C000),
-    gsSPSegment(0x0D, 0x0000D000),
-    gsSPSegment(0x0E, 0x0000E000),
-    gsSPSegment(0x0F, 0x0000F000),
+    gsSPSegment(0x00, D_00000000),
+    gsSPSegment(0x01, D_00001000),
+    gsSPSegment(0x02, D_00002000),
+    gsSPSegment(0x03, D_00003000),
+    gsSPSegment(0x04, D_00004000),
+    gsSPSegment(0x05, D_00005000),
+    gsSPSegment(0x06, D_00006000),
+    gsSPSegment(0x07, D_00007000),
+    gsSPSegment(0x08, D_00008000),
+    gsSPSegment(0x09, D_00009000),
+    gsSPSegment(0x0A, D_0000A000),
+    gsSPSegment(0x0B, D_0000B000),
+    gsSPSegment(0x0C, D_0000C000),
+    gsSPSegment(0x0D, D_0000D000),
+    gsSPSegment(0x0E, D_0000E000),
+    gsSPSegment(0x0F, D_0000F000),
     gsSPEndDisplayList(),
 }
 ";
@@ -800,6 +837,24 @@ fn test_seg() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
+        seg: HashMap::from_iter([
+            (Address(0x00000000), (0x00,)),
+            (Address(0x00001000), (0x01,)),
+            (Address(0x00002000), (0x02,)),
+            (Address(0x00003000), (0x03,)),
+            (Address(0x00004000), (0x04,)),
+            (Address(0x00005000), (0x05,)),
+            (Address(0x00006000), (0x06,)),
+            (Address(0x00007000), (0x07,)),
+            (Address(0x00008000), (0x08,)),
+            (Address(0x00009000), (0x09,)),
+            (Address(0x0000A000), (0x0A,)),
+            (Address(0x0000B000), (0x0B,)),
+            (Address(0x0000C000), (0x0C,)),
+            (Address(0x0000D000), (0x0D,)),
+            (Address(0x0000E000), (0x0E,)),
+            (Address(0x0000F000), (0x0F,)),
+        ]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -807,13 +862,12 @@ fn test_seg() {
 
 #[test]
 fn test_ucode() {
-    static INPUT: [u8; 0x30] = [
+    static INPUT: [u8; 0x28] = [
         0xE1, 0x00, 0x00, 0x00, 0x80, 0x00, 0x60, 0x00, //
         0xDD, 0x00, 0x07, 0xFF, 0x80, 0x00, 0x40, 0x00, //
         0xE1, 0x00, 0x00, 0x00, 0x80, 0x00, 0xA0, 0x00, //
         0xDD, 0x00, 0x03, 0xFF, 0x80, 0x00, 0x80, 0x00, //
         0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
     ];
     static OUTPUT: &str = "\
 {
