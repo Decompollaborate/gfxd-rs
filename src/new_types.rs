@@ -83,3 +83,28 @@ impl TexSiz {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub enum LookatCount {
+    /// This macro does not correspond to a complete `gsSPLookAt`, but instead
+    /// is a singular use of either `gsSPLookAtX` or `gsSPLookAtY`.
+    N1 = 1,
+    /// This macro is a complete `gsSPLookAt` macro.
+    N2 = 2,
+}
+
+impl LookatCount {
+    pub(crate) fn new(value: i32) -> Self {
+        match value {
+            1 => Self::N1,
+            2 => Self::N2,
+            // SAFETY: This is a value made by gfxd, not decoded from a macro,
+            // and we already cover every possible value, so if we reach this
+            // part it means gfxd itself update itself to add new values.
+            x => unreachable!(
+                "Oh, this shouldn't have had happen. Could you make a bug report? Value: {}",
+                x
+            ),
+        }
+    }
+}

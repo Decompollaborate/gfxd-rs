@@ -5,8 +5,8 @@ use pretty_assertions::assert_eq;
 use std::{collections::HashMap, iter::FromIterator};
 
 use gfxd_rs::{
-    Address, Customizer, Disassembler, DoDefaultOutput, MacroInfo, MacroPrinter, Microcode,
-    Printer, TexFmt, TexSiz, TlutCount,
+    Address, Customizer, Disassembler, DoDefaultOutput, LookatCount, MacroInfo, MacroPrinter,
+    Microcode, Printer, TexFmt, TexSiz, TlutCount,
 };
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -17,7 +17,9 @@ struct Tracker {
     zimg: HashMap<Address, ()>,
     dl: HashMap<Address, ()>,
     mtx: HashMap<Address, ()>,
-    vtx: HashMap<Address, i32>,
+    lookat: HashMap<Address, (LookatCount,)>,
+    vtx: HashMap<Address, (i32,)>,
+    vp: HashMap<Address, ()>,
 }
 
 #[test]
@@ -404,14 +406,32 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     };
     customizer.mtx_callback(&mut mtx_callback);
 
+    let mut lookat_tracker = HashMap::new();
+    let mut lookat_callback = |printer: &mut Printer, _info: &mut _, lookat, count| {
+        lookat_tracker.insert(lookat, (count,));
+
+        printer.write_str(&format!("D_{lookat}"));
+        DoDefaultOutput::Override
+    };
+    customizer.lookat_callback(&mut lookat_callback);
+
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
-        vtx_tracker.insert(vtx, num);
+        vtx_tracker.insert(vtx, (num,));
 
         printer.write_str(&format!("D_{vtx}"));
         DoDefaultOutput::Override
     };
     customizer.vtx_callback(&mut vtx_callback);
+
+    let mut vp_tracker = HashMap::new();
+    let mut vp_callback = |printer: &mut Printer, _info: &mut _, vp| {
+        vp_tracker.insert(vp, ());
+
+        printer.write_str(&format!("D_{vp}"));
+        DoDefaultOutput::Override
+    };
+    customizer.vp_callback(&mut vp_callback);
 
     let out = Disassembler::new().disassemble(input, microcode, &mut customizer);
 
@@ -422,7 +442,9 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
         zimg: zimg_tracker,
         dl: dl_tracker,
         mtx: mtx_tracker,
+        lookat: lookat_tracker,
         vtx: vtx_tracker,
+        vp: vp_tracker,
     };
     (out, tracker)
 }
@@ -491,7 +513,7 @@ fn test_image_callback_ci4() {
     let expected_tracker = Tracker {
         tlut: HashMap::from_iter([(Address(0x06002000), (Some(0), TlutCount::Pal16))]),
         timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
-        vtx: HashMap::from_iter([(Address(0x06006000), 4)]),
+        vtx: HashMap::from_iter([(Address(0x06006000), (4,))]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -561,7 +583,7 @@ fn test_image_callback_ci8() {
     let expected_tracker = Tracker {
         tlut: HashMap::from_iter([(Address(0x06002000), (None, TlutCount::Pal256))]),
         timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
-        vtx: HashMap::from_iter([(Address(0x06006000), 4)]),
+        vtx: HashMap::from_iter([(Address(0x06006000), (4,))]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -622,8 +644,8 @@ fn test_dl_mtx() {
 #[test]
 fn test_look_at_viewport() {
     static INPUT: [u8; 0x30] = [
-        0xDC, 0x08, 0x00, 0x0A, 0x05, 0x00, 0x02, 0x00, //
-        0xDC, 0x08, 0x03, 0x0A, 0x05, 0x00, 0x02, 0x10, //
+        0xDC, 0x08, 0x00, 0x0A, 0x05, 0x00, 0x02, 0x20, //
+        0xDC, 0x08, 0x03, 0x0A, 0x05, 0x00, 0x02, 0x30, //
         0xDC, 0x08, 0x03, 0x0A, 0x05, 0x00, 0x02, 0x10, //
         0xDC, 0x08, 0x00, 0x0A, 0x05, 0x00, 0x02, 0x00, //
         0xDC, 0x08, 0x00, 0x08, 0x06, 0x00, 0x60, 0x00, //
@@ -631,10 +653,10 @@ fn test_look_at_viewport() {
     ];
     static OUTPUT: &str = "\
 {
-    gsSPLookAt(0x05000200),
-    gsSPLookAtY(0x05000210),
-    gsSPLookAtX(0x05000200),
-    gsSPViewport(0x06006000),
+    gsSPLookAt(D_05000220),
+    gsSPLookAtY(D_05000210),
+    gsSPLookAtX(D_05000200),
+    gsSPViewport(D_06006000),
     gsSPEndDisplayList(),
 }
 ";
@@ -643,6 +665,12 @@ fn test_look_at_viewport() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
+        lookat: HashMap::from_iter([
+            (Address(0x05000220), (LookatCount::N2,)),
+            (Address(0x05000210), (LookatCount::N1,)),
+            (Address(0x05000200), (LookatCount::N1,)),
+        ]),
+        vp: HashMap::from_iter([(Address(0x06006000), ())]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
