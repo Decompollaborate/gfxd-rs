@@ -25,7 +25,7 @@ dependencies = [
 [[package]]
 name = "gfxd-sys"
 version = "0.1.0"
-source = "git+https://github.com/Decompollaborate/gfxd-sys.git#f3c8d7f4d15b4890a6c35a5696ab3ef7a3f4f6b1"
+source = "git+https://github.com/Decompollaborate/gfxd-sys.git#9713cb380bc63e64584e27e682cbed3e250bd08e"
 dependencies = [
  "cc",
  "libc",

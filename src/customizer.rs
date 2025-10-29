@@ -1,7 +1,12 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{ffi, slice};
+use core::{
+    convert::TryInto,
+    ffi,
+    num::{NonZeroU16, NonZeroU32},
+    slice,
+};
 
 use gfxd_sys::ptr::NonNullConst;
 
@@ -65,6 +70,15 @@ pub struct Customizer<'cls> {
     vtx_fn:
         Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput>,
     vp_fn: Option<&'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput>,
+    uctext_fn: Option<
+        &'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
+    >,
+    ucdata_fn: Option<
+        &'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
+    >,
+    dram_fn: Option<
+        &'cls mut dyn FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU16) -> DoDefaultOutput,
+    >,
 }
 
 impl Customizer<'_> {
@@ -463,6 +477,81 @@ impl Customizer<'_> {
                 gfxd_sys::argument_callbacks::gfxd_vp_callback(None);
             }
         }
+
+        if self.uctext_fn.is_some() {
+            extern "C" fn callback(uctext: u32, size: NonZeroU32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().uctext_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let uctext = Address(uctext);
+                    (closure)(&mut printer, &mut info, uctext, size)
+                } else {
+                    panic!("uctext_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_uctext_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_uctext_callback(None);
+            }
+        }
+
+        if self.ucdata_fn.is_some() {
+            extern "C" fn callback(ucdata: u32, size: NonZeroU32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().ucdata_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let ucdata = Address(ucdata);
+                    (closure)(&mut printer, &mut info, ucdata, size)
+                } else {
+                    panic!("ucdata_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_ucdata_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_ucdata_callback(None);
+            }
+        }
+
+        if self.dram_fn.is_some() {
+            extern "C" fn callback(dram: u32, size: NonZeroU32) -> ffi::c_int {
+                let lib_data = LibData::get().expect("Welp. Maybe race condition?");
+
+                let ret = if let Some(closure) = &mut lib_data.get_customizer_mut().dram_fn {
+                    let mut printer = Printer::new();
+                    let mut info = MacroInfo::new();
+                    let dram = Address(dram);
+                    let size = size
+                        .try_into()
+                        .expect("This value should be less than 0x4096");
+                    (closure)(&mut printer, &mut info, dram, size)
+                } else {
+                    panic!("dram_fn closure was None?")
+                };
+
+                ret.into_ret()
+            }
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_dram_callback(Some(callback));
+            }
+        } else {
+            unsafe {
+                gfxd_sys::argument_callbacks::gfxd_dram_callback(None);
+            }
+        }
     }
 }
 
@@ -485,6 +574,9 @@ impl Customizer<'_> {
             seg_fn: None,
             vtx_fn: None,
             vp_fn: None,
+            uctext_fn: None,
+            ucdata_fn: None,
+            dram_fn: None,
         }
     }
 }
@@ -621,6 +713,27 @@ impl<'cls> Customizer<'cls> {
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.vp_fn = Some(callback);
+    }
+
+    pub fn uctext_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
+    {
+        self.uctext_fn = Some(callback);
+    }
+
+    pub fn ucdata_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
+    {
+        self.ucdata_fn = Some(callback);
+    }
+
+    pub fn dram_callback<F>(&mut self, callback: &'cls mut F)
+    where
+        F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU16) -> DoDefaultOutput,
+    {
+        self.dram_fn = Some(callback);
     }
 }
 

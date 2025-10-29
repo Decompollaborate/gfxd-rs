@@ -2,7 +2,11 @@
 /* SPDX-License-Identifier: MIT */
 
 use pretty_assertions::assert_eq;
-use std::{collections::HashMap, iter::FromIterator};
+use std::{
+    collections::HashMap,
+    iter::FromIterator,
+    num::{NonZeroU16, NonZeroU32},
+};
 
 use gfxd_rs::{
     Address, Customizer, Disassembler, DoDefaultOutput, LightsNum, LookatCount, MacroInfo,
@@ -23,6 +27,9 @@ struct Tracker {
     seg: HashMap<Address, (u8,)>,
     vtx: HashMap<Address, (i32,)>,
     vp: HashMap<Address, ()>,
+    uctext: HashMap<Address, (NonZeroU32,)>,
+    ucdata: HashMap<Address, (NonZeroU32,)>,
+    dram: HashMap<Address, (NonZeroU16,)>,
 }
 
 #[test]
@@ -463,6 +470,33 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     };
     customizer.vp_callback(&mut vp_callback);
 
+    let mut uctext_tracker = HashMap::new();
+    let mut uctext_callback = |printer: &mut Printer, _info: &mut _, uctext, num| {
+        uctext_tracker.insert(uctext, (num,));
+
+        printer.write_str(&format!("D_{uctext}"));
+        DoDefaultOutput::Override
+    };
+    customizer.uctext_callback(&mut uctext_callback);
+
+    let mut ucdata_tracker = HashMap::new();
+    let mut ucdata_callback = |printer: &mut Printer, _info: &mut _, ucdata, num| {
+        ucdata_tracker.insert(ucdata, (num,));
+
+        printer.write_str(&format!("D_{ucdata}"));
+        DoDefaultOutput::Override
+    };
+    customizer.ucdata_callback(&mut ucdata_callback);
+
+    let mut dram_tracker = HashMap::new();
+    let mut dram_callback = |printer: &mut Printer, _info: &mut _, dram, num| {
+        dram_tracker.insert(dram, (num,));
+
+        printer.write_str(&format!("D_{dram}"));
+        DoDefaultOutput::Override
+    };
+    customizer.dram_callback(&mut dram_callback);
+
     let out = Disassembler::new().disassemble(input, microcode, &mut customizer);
 
     let tracker = Tracker {
@@ -478,6 +512,9 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
         seg: seg_tracker,
         vtx: vtx_tracker,
         vp: vp_tracker,
+        uctext: uctext_tracker,
+        ucdata: ucdata_tracker,
+        dram: dram_tracker,
     };
     (out, tracker)
 }
@@ -871,8 +908,8 @@ fn test_ucode() {
     ];
     static OUTPUT: &str = "\
 {
-    gsSPLoadUcode(0x80004000, 0x80006000),
-    gsSPLoadUcodeEx(0x80008000, 0x8000A000, 0x0400),
+    gsSPLoadUcode(D_80004000, D_80006000),
+    gsSPLoadUcodeEx(D_80008000, D_8000A000, 0x0400),
     gsSPEndDisplayList(),
 }
 ";
@@ -881,6 +918,14 @@ fn test_ucode() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
+        uctext: HashMap::from_iter([
+            (Address(0x80004000), (NonZeroU32::new(0x1000).unwrap(),)),
+            (Address(0x80008000), (NonZeroU32::new(0x1000).unwrap(),)),
+        ]),
+        ucdata: HashMap::from_iter([
+            (Address(0x80006000), (NonZeroU32::new(0x0800).unwrap(),)),
+            (Address(0x8000A000), (NonZeroU32::new(0x0400).unwrap(),)),
+        ]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -890,13 +935,13 @@ fn test_ucode() {
 fn test_dram() {
     static INPUT: [u8; 0x18] = [
         0xD6, 0x19, 0xE0, 0x13, 0x88, 0x88, 0x88, 0x88, //
-        0xD6, 0x99, 0xE0, 0x13, 0x88, 0x88, 0x88, 0x88, //
+        0xD6, 0x99, 0xE0, 0x13, 0x80, 0x88, 0x88, 0x88, //
         0xDF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
     ];
     static OUTPUT: &str = "\
 {
-    gsSPDmaRead(0x0678, 0x88888888, 0x0014),
-    gsSPDmaWrite(0x0678, 0x88888888, 0x0014),
+    gsSPDmaRead(0x0678, D_88888888, 0x0014),
+    gsSPDmaWrite(0x0678, D_80888888, 0x0014),
     gsSPEndDisplayList(),
 }
 ";
@@ -905,6 +950,10 @@ fn test_dram() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
+        dram: HashMap::from_iter([
+            (Address(0x88888888), (NonZeroU16::new(0x14).unwrap(),)),
+            (Address(0x80888888), (NonZeroU16::new(0x14).unwrap(),)),
+        ]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);

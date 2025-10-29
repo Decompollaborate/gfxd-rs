@@ -9,6 +9,8 @@ use crate::{
     Customizer, Microcode,
 };
 
+// TODO: figure out where and how to expose gfxd_arg_callbacks
+
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Disassembler {
     // Placeholder to avoid constructing this type
