@@ -3,12 +3,6 @@
 ##### `int gfxd_arg_callbacks(int arg_num)`
 
 
-##### `typedef int gfxd_dl_fn_t(uint32_t dl)`
-##### `void gfxd_dl_callback(gfxd_dl_fn_t *fn)`
-
-##### `typedef int gfxd_mtx_fn_t(uint32_t mtx)`
-##### `void gfxd_mtx_callback(gfxd_mtx_fn_t *fn)`
-
 ##### `typedef int gfxd_lookat_fn_t(uint32_t lookat, int32_t count)`
 ##### `void gfxd_lookat_callback(gfxd_lookat_fn_t *fn)`
 
