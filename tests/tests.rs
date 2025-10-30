@@ -342,7 +342,7 @@ fn test_macro_info() {
     assert_eq!(OUTPUT, out);
 }
 
-fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
+fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) -> (String, Tracker) {
     let mut customizer = Customizer::new();
 
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
@@ -497,7 +497,7 @@ fn callback_common(input: &[u8], microcode: Microcode) -> (String, Tracker) {
     };
     customizer.dram_callback(&mut dram_callback);
 
-    let out = Disassembler::new().disassemble(input, microcode, &mut customizer);
+    let out = Disassembler::new().dynamic(dynamic).disassemble(input, microcode, &mut customizer);
 
     let tracker = Tracker {
         tlut: tlut_tracker,
@@ -577,7 +577,7 @@ fn test_image_callback_ci4() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -647,7 +647,7 @@ fn test_image_callback_ci8() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -674,7 +674,7 @@ fn test_framebuffer() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -700,7 +700,7 @@ fn test_dl_mtx() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -731,7 +731,7 @@ fn test_look_at_viewport() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -808,7 +808,7 @@ fn test_lights() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -870,7 +870,7 @@ fn test_seg() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -914,7 +914,7 @@ fn test_ucode() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
@@ -946,13 +946,58 @@ fn test_dram() {
 }
 ";
 
-    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2);
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex2, None);
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
         dram: HashMap::from_iter([
             (Address(0x88888888), (NonZeroU16::new(0x14).unwrap(),)),
             (Address(0x80888888), (NonZeroU16::new(0x14).unwrap(),)),
+        ]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
+}
+
+#[test]
+fn test_dynamic() {
+    static INPUT: [u8; 0x60] = [
+        0xE7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0xFC, 0x12, 0x7E, 0x03, 0xFF, 0xFF, 0xFD, 0xF8, //
+        0xB9, 0x00, 0x03, 0x1D, 0xC8, 0x11, 0x20, 0x78, //
+        0xB6, 0x00, 0x00, 0x00, 0x00, 0x0E, 0x00, 0x00, //
+        0xB7, 0x00, 0x00, 0x00, 0x00, 0x01, 0x20, 0x00, //
+        0xFA, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, //
+        0x04, 0x00, 0x30, 0xBF, 0x00, 0x00, 0x02, 0xE0, //
+        0xB1, 0x00, 0x02, 0x04, 0x00, 0x02, 0x06, 0x04, //
+        0xB1, 0x08, 0x0A, 0x0C, 0x00, 0x0A, 0x0E, 0x0C, //
+        0xB1, 0x0A, 0x10, 0x12, 0x00, 0x0A, 0x12, 0x0E, //
+        0xB1, 0x14, 0x02, 0x00, 0x00, 0x14, 0x00, 0x16, //
+        0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+    ];
+    static OUTPUT: &str = "\
+{
+    gDPPipeSync(gfx++),
+    gDPSetCombineLERP(gfx++, TEXEL0, 0, SHADE, 0, 0, 0, 0, 1, COMBINED, 0, PRIMITIVE, 0, 0, 0, 0, COMBINED),
+    gDPSetRenderMode(gfx++, G_RM_FOG_SHADE_A, G_RM_AA_ZB_OPA_SURF2),
+    gSPClearGeometryMode(gfx++, G_LIGHTING | G_TEXTURE_GEN | G_TEXTURE_GEN_LINEAR),
+    gSPSetGeometryMode(gfx++, G_CULL_BACK | G_FOG),
+    gDPSetPrimColor(gfx++, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF),
+    gSPVertex(gfx++, D_000002E0, 12, 0),
+    gSP2Triangles(gfx++, 0, 1, 2, 0, 1, 3, 2, 0),
+    gSP2Triangles(gfx++, 4, 5, 6, 0, 5, 7, 6, 0),
+    gSP1Quadrangle(gfx++, 5, 8, 9, 7, 0),
+    gSP1Quadrangle(gfx++, 10, 1, 0, 11, 0),
+    gSPEndDisplayList(gfx++),
+}
+";
+
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex, Some("gfx++"));
+    assert_eq!(OUTPUT, out);
+
+    let expected_tracker = Tracker {
+        vtx: HashMap::from_iter([
+            (Address(0x000002E0), (12,)),
         ]),
         ..Tracker::default()
     };

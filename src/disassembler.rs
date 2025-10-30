@@ -1,7 +1,8 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::String;
+use alloc::string::{String, ToString};
+use core::ffi;
 use gfxd_sys::ptr::NonNullConst;
 
 use crate::{
@@ -12,21 +13,22 @@ use crate::{
 // TODO: figure out where and how to expose gfxd_arg_callbacks
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct Disassembler {
-    // Placeholder to avoid constructing this type
-    _unit: (),
+pub struct Disassembler<'d> {
     // TODO: endian and wordsize
-    // TODO: dynamic
+    dynamic: Option<&'d str>,
     // TODO: enable/disable cap
 }
 
-// TODO: expose macro information inside the custom handlers and callbacks
-
-impl Disassembler {
+impl<'d> Disassembler<'d> {
     #[must_use]
     #[expect(clippy::new_without_default)]
     pub const fn new() -> Self {
-        Self { _unit: () }
+        Self { dynamic: None }
+    }
+
+    pub const fn dynamic(&mut self, dynamic: Option<&'d str>) -> &mut Self {
+        self.dynamic = dynamic;
+        self
     }
 
     #[must_use]
@@ -41,10 +43,23 @@ impl Disassembler {
         // tbh I'm not sure if this is needed at all, I need to investigate.
         // let lib_data = alloc::boxed::Box::pin(lib_data);
 
+        // We need to ensure this String doesn't get dropped before we execute
+        // gfxd. Allocating it outside disassemble_impl and passing the
+        // reference should ensure that, as far as I understand it.
+        let dynamic = self.dynamic.map(|x| {
+            let mut x = x.to_string();
+            // nul-terminate the string
+            x.push('\0');
+            x
+        });
+        // `as_ref` is needed, otherwise the string gets consumed and this ends
+        // up pointing to itself or something weird like that.
+        let dynamic_ptr = dynamic.as_ref().and_then(|x| NonNullConst::new(x.as_ptr().cast()));
+
         {
             let mut lib_data_wrap = lib_data.gfxd_set();
 
-            unsafe { self.disassemble_impl(data, microcode, &mut lib_data_wrap) };
+            unsafe { self.disassemble_impl(data, microcode, &mut lib_data_wrap, dynamic_ptr) };
         }
 
         lib_data.consume()
@@ -61,6 +76,7 @@ impl Disassembler {
         data: &[u8],
         microcode: Microcode,
         lib_data_wrap: &mut LibDataWrap,
+        dynamic: Option<NonNullConst<ffi::c_char>>,
     ) {
         // Setup input and output
         unsafe {
@@ -75,6 +91,10 @@ impl Disassembler {
         // Set the microcode
         unsafe {
             gfxd_sys::settings::gfxd_target(Some(microcode.to_microcode_ptr()));
+        }
+
+        unsafe {
+            gfxd_sys::settings::gfxd_dynamic(dynamic);
         }
 
         // Run
