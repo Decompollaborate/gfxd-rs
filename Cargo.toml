@@ -32,7 +32,7 @@ categories = [
 # ```
 #
 # Don't forget to update this in CI too.
-rust-version = "1.64.0"
+rust-version = "1.58.0"
 
 [lib]
 path = "src/lib.rs"
@@ -46,4 +46,4 @@ gfxd-sys = { git = "https://github.com/Decompollaborate/gfxd-sys.git", default-f
 # gfxd-sys = { path = "../gfxd-sys/", default-features = false }
 
 [dev-dependencies]
-pretty_assertions = "1"
+pretty_assertions = ">=1.0, <1.3"

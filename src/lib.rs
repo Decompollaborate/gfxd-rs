@@ -15,6 +15,7 @@ pub(crate) mod macro_info;
 pub(crate) mod microcode;
 pub(crate) mod new_types;
 pub(crate) mod printer;
+pub(crate) mod utils;
 
 pub use arg_type::ArgType;
 pub use customizer::{Customizer, DoDefaultOutput, MacroFnRet};

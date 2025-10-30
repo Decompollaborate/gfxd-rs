@@ -3,12 +3,10 @@
 
 use core::{
     convert::TryInto,
-    ffi,
     num::{NonZeroU16, NonZeroU32},
     slice,
 };
-
-use gfxd_sys::ptr::NonNullConst;
+use gfxd_sys::{ffi, ptr::NonNullConst};
 
 use crate::{
     lib_data::LibData, Address, LightsNum, LookatCount, MacroInfo, MacroPrinter, Printer, TexFmt,

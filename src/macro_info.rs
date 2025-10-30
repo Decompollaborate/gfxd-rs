@@ -1,14 +1,10 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use core::{
-    ffi::{self, CStr},
-    fmt, slice,
-};
+use core::{fmt, slice};
+use gfxd_sys::{ffi, macro_info::gfxd_value_t, ptr::NonNullConst};
 
-use gfxd_sys::{macro_info::gfxd_value_t, ptr::NonNullConst};
-
-use crate::{ArgType, MacroId};
+use crate::{utils, ArgType, MacroId};
 
 const SIZEOF_GFX: usize = 8;
 
@@ -76,11 +72,9 @@ impl MacroInfo {
     pub fn macro_name(&mut self) -> Option<&str> {
         let macro_name_raw = unsafe { gfxd_sys::macro_info::gfxd_macro_name() }?;
 
-        // SAFETY: The pointer given by gfxd is a nul-terminated C string.
-        let macro_bytes = unsafe { CStr::from_ptr(macro_name_raw.as_ptr()) }.to_bytes();
-
-        // SAFETY: gfxd only uses ASCII.
-        let macro_str = unsafe { core::str::from_utf8_unchecked(macro_bytes) };
+        // SAFETY: The pointer given by gfxd is a nul-terminated C string, and
+        // the.data should be UTF-8 already.
+        let macro_str = unsafe { utils::str_from_c_str(macro_name_raw) };
 
         Some(macro_str)
     }
@@ -122,10 +116,11 @@ impl MacroInfo {
 
         let buf = unsafe { gfxd_sys::macro_info::gfxd_arg_name(arg_num as _) };
 
-        // SAFETY: Simply trust the data is nul-terminated.
-        let name = unsafe { CStr::from_ptr(buf.as_ptr()) };
+        // SAFETY: The pointer given by gfxd is a nul-terminated C string, and
+        // the.data should be UTF-8 already.
+        let name = unsafe { utils::str_from_c_str(buf) };
 
-        name.to_str().ok()
+        Some(name)
     }
 
     #[must_use]

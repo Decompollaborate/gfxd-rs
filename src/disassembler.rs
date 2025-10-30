@@ -2,8 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use alloc::string::{String, ToString};
-use core::ffi;
-use gfxd_sys::ptr::NonNullConst;
+use gfxd_sys::{ffi, ptr::NonNullConst};
 
 use crate::{
     lib_data::{LibData, LibDataWrap},
