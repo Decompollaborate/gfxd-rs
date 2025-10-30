@@ -65,8 +65,6 @@ fn test_basic() {
 }
 ";
 
-    let mut customizer = Customizer::new();
-
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
@@ -74,14 +72,6 @@ fn test_basic() {
         printer.write_str(",\n");
         ret
     };
-    customizer.macro_fn(&mut macro_fn);
-
-    /*
-    let mut arg_fn = |printer: &mut MacroPrinter, arg_num| {
-        printer.arg_dflt(arg_num);
-    };
-    customizer.arg_fn(&mut arg_fn);
-    */
 
     let mut before = |printer: &mut Printer| {
         printer.write_str("{\n");
@@ -89,7 +79,11 @@ fn test_basic() {
     let mut after = |printer: &mut Printer| {
         printer.write_str("}\n");
     };
-    customizer.before_after_execution_callback(&mut before, &mut after);
+
+    let mut customizer = Customizer::new();
+    customizer
+        .macro_fn(&mut macro_fn)
+        .before_after_execution_callback(&mut before, &mut after);
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
@@ -128,8 +122,6 @@ fn test_vtx_callback() {
 }
 ";
 
-    let mut customizer = Customizer::new();
-
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
@@ -137,7 +129,6 @@ fn test_vtx_callback() {
         printer.write_str(",\n");
         ret
     };
-    customizer.macro_fn(&mut macro_fn);
 
     let mut before = |printer: &mut Printer| {
         printer.write_str("{\n");
@@ -145,7 +136,6 @@ fn test_vtx_callback() {
     let mut after = |printer: &mut Printer| {
         printer.write_str("}\n");
     };
-    customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
@@ -154,7 +144,12 @@ fn test_vtx_callback() {
         printer.write_str(&format!("D_{vtx}"));
         DoDefaultOutput::Override
     };
-    customizer.vtx_callback(&mut vtx_callback);
+
+    let mut customizer = Customizer::new();
+    customizer
+        .macro_fn(&mut macro_fn)
+        .before_after_execution_callback(&mut before, &mut after)
+        .vtx_callback(&mut vtx_callback);
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
@@ -194,8 +189,6 @@ fn test_vtx_callback_default() {
 }
 ";
 
-    let mut customizer = Customizer::new();
-
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
         /* Print a 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
@@ -203,7 +196,6 @@ fn test_vtx_callback_default() {
         printer.write_str(",\n");
         ret
     };
-    customizer.macro_fn(&mut macro_fn);
 
     let mut before = |printer: &mut Printer| {
         printer.write_str("{\n");
@@ -211,7 +203,6 @@ fn test_vtx_callback_default() {
     let mut after = |printer: &mut Printer| {
         printer.write_str("}\n");
     };
-    customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
@@ -220,9 +211,15 @@ fn test_vtx_callback_default() {
         printer.write_str("(Vtx *)");
         DoDefaultOutput::DoDefault
     };
-    customizer.vtx_callback(&mut vtx_callback);
 
-    let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
+    let out = Disassembler::new().disassemble(
+        &INPUT,
+        Microcode::F3dex,
+        &mut Customizer::new()
+            .macro_fn(&mut macro_fn)
+            .before_after_execution_callback(&mut before, &mut after)
+            .vtx_callback(&mut vtx_callback),
+    );
     assert_eq!(OUTPUT, out);
     assert_eq!(HashMap::from_iter([(Address(0x000002E0), 12)]), vtx_tracker);
 }
@@ -351,7 +348,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(",\n");
         ret
     };
-    customizer.macro_fn(&mut macro_fn);
 
     let mut before = |printer: &mut Printer| {
         printer.write_str("{\n");
@@ -359,7 +355,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut after = |printer: &mut Printer| {
         printer.write_str("}\n");
     };
-    customizer.before_after_execution_callback(&mut before, &mut after);
 
     let mut tlut_tracker = HashMap::new();
     let mut tlut_callback = |printer: &mut Printer, _info: &mut _, tlut, index, count| {
@@ -368,7 +363,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{tlut}"));
         DoDefaultOutput::Override
     };
-    customizer.tlut_callback(&mut tlut_callback);
 
     let mut timg_tracker = HashMap::new();
     let mut timg_callback =
@@ -378,7 +372,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
             printer.write_str(&format!("D_{timg}"));
             DoDefaultOutput::Override
         };
-    customizer.timg_callback(&mut timg_callback);
 
     let mut cimg_tracker = HashMap::new();
     let mut cimg_callback = |printer: &mut Printer, _info: &mut _, cimg, fmt, siz, width| {
@@ -387,7 +380,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{cimg}"));
         DoDefaultOutput::Override
     };
-    customizer.cimg_callback(&mut cimg_callback);
 
     let mut zimg_tracker = HashMap::new();
     let mut zimg_callback = |printer: &mut Printer, _info: &mut _, zimg| {
@@ -396,7 +388,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{zimg}"));
         DoDefaultOutput::Override
     };
-    customizer.zimg_callback(&mut zimg_callback);
 
     let mut dl_tracker = HashMap::new();
     let mut dl_callback = |printer: &mut Printer, _info: &mut _, dl| {
@@ -405,7 +396,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{dl}"));
         DoDefaultOutput::Override
     };
-    customizer.dl_callback(&mut dl_callback);
 
     let mut mtx_tracker = HashMap::new();
     let mut mtx_callback = |printer: &mut Printer, _info: &mut _, mtx| {
@@ -414,7 +404,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{mtx}"));
         DoDefaultOutput::Override
     };
-    customizer.mtx_callback(&mut mtx_callback);
 
     let mut lookat_tracker = HashMap::new();
     let mut lookat_callback = |printer: &mut Printer, _info: &mut _, lookat, count| {
@@ -423,7 +412,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{lookat}"));
         DoDefaultOutput::Override
     };
-    customizer.lookat_callback(&mut lookat_callback);
 
     let mut light_tracker = HashMap::new();
     let mut light_callback = |printer: &mut Printer, _info: &mut _, light| {
@@ -432,7 +420,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{light}"));
         DoDefaultOutput::Override
     };
-    customizer.light_callback(&mut light_callback);
 
     let mut lightsn_tracker = HashMap::new();
     let mut lightsn_callback = |printer: &mut Printer, _info: &mut _, lightsn, num| {
@@ -441,7 +428,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{lightsn}"));
         DoDefaultOutput::Override
     };
-    customizer.lightsn_callback(&mut lightsn_callback);
 
     let mut seg_tracker = HashMap::new();
     let mut seg_callback = |printer: &mut Printer, _info: &mut _, seg, num| {
@@ -450,7 +436,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{seg}"));
         DoDefaultOutput::Override
     };
-    customizer.seg_callback(&mut seg_callback);
 
     let mut vtx_tracker = HashMap::new();
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
@@ -459,7 +444,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{vtx}"));
         DoDefaultOutput::Override
     };
-    customizer.vtx_callback(&mut vtx_callback);
 
     let mut vp_tracker = HashMap::new();
     let mut vp_callback = |printer: &mut Printer, _info: &mut _, vp| {
@@ -468,7 +452,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{vp}"));
         DoDefaultOutput::Override
     };
-    customizer.vp_callback(&mut vp_callback);
 
     let mut uctext_tracker = HashMap::new();
     let mut uctext_callback = |printer: &mut Printer, _info: &mut _, uctext, num| {
@@ -477,7 +460,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{uctext}"));
         DoDefaultOutput::Override
     };
-    customizer.uctext_callback(&mut uctext_callback);
 
     let mut ucdata_tracker = HashMap::new();
     let mut ucdata_callback = |printer: &mut Printer, _info: &mut _, ucdata, num| {
@@ -486,7 +468,6 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{ucdata}"));
         DoDefaultOutput::Override
     };
-    customizer.ucdata_callback(&mut ucdata_callback);
 
     let mut dram_tracker = HashMap::new();
     let mut dram_callback = |printer: &mut Printer, _info: &mut _, dram, num| {
@@ -495,9 +476,29 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         printer.write_str(&format!("D_{dram}"));
         DoDefaultOutput::Override
     };
-    customizer.dram_callback(&mut dram_callback);
 
-    let out = Disassembler::new().dynamic(dynamic).disassemble(input, microcode, &mut customizer);
+    customizer
+        .macro_fn(&mut macro_fn)
+        .before_after_execution_callback(&mut before, &mut after)
+        .tlut_callback(&mut tlut_callback)
+        .timg_callback(&mut timg_callback)
+        .cimg_callback(&mut cimg_callback)
+        .zimg_callback(&mut zimg_callback)
+        .dl_callback(&mut dl_callback)
+        .mtx_callback(&mut mtx_callback)
+        .lookat_callback(&mut lookat_callback)
+        .light_callback(&mut light_callback)
+        .lightsn_callback(&mut lightsn_callback)
+        .seg_callback(&mut seg_callback)
+        .vtx_callback(&mut vtx_callback)
+        .vp_callback(&mut vp_callback)
+        .uctext_callback(&mut uctext_callback)
+        .ucdata_callback(&mut ucdata_callback)
+        .dram_callback(&mut dram_callback);
+
+    let out = Disassembler::new()
+        .dynamic(dynamic)
+        .disassemble(input, microcode, &mut customizer);
 
     let tracker = Tracker {
         tlut: tlut_tracker,
@@ -996,9 +997,7 @@ fn test_dynamic() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        vtx: HashMap::from_iter([
-            (Address(0x000002E0), (12,)),
-        ]),
+        vtx: HashMap::from_iter([(Address(0x000002E0), (12,))]),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);

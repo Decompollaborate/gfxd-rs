@@ -582,13 +582,19 @@ impl Customizer<'_> {
 }
 
 impl<'cls> Customizer<'cls> {
-    pub fn before_after_execution_callback<B, A>(&mut self, before: &'cls mut B, after: &'cls mut A)
+    pub fn before_after_execution_callback<B, A>(
+        &mut self,
+        before: &'cls mut B,
+        after: &'cls mut A,
+    ) -> &mut Self
     where
         B: FnMut(&mut Printer),
         A: FnMut(&mut Printer),
     {
         self.before_execution = Some(before);
         self.after_execution = Some(after);
+
+        self
     }
 
     pub(crate) fn do_before(&mut self) {
@@ -606,30 +612,35 @@ impl<'cls> Customizer<'cls> {
 }
 
 impl<'cls> Customizer<'cls> {
-    pub fn macro_fn<F>(&mut self, callback: &'cls mut F)
+    pub fn macro_fn<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut MacroPrinter, &mut MacroInfo) -> MacroFnRet,
     {
         self.macro_fn = Some(callback);
+
+        self
     }
 
-    pub fn arg_fn<F>(&mut self, callback: &'cls mut F)
+    pub fn arg_fn<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut MacroPrinter, &mut MacroInfo, i32),
     {
         self.arg_fn = Some(callback);
+
+        self
     }
 }
 
 impl<'cls> Customizer<'cls> {
-    pub fn tlut_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn tlut_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, Option<u8>, TlutCount) -> DoDefaultOutput,
     {
         self.tlut_fn = Some(callback);
+        self
     }
 
-    pub fn timg_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn timg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(
             &mut Printer,
@@ -643,97 +654,111 @@ impl<'cls> Customizer<'cls> {
         ) -> DoDefaultOutput,
     {
         self.timg_fn = Some(callback);
+        self
     }
 
-    pub fn cimg_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn cimg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, TexFmt, TexSiz, u16) -> DoDefaultOutput,
     {
         self.cimg_fn = Some(callback);
+        self
     }
 
-    pub fn zimg_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn zimg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.zimg_fn = Some(callback);
+        self
     }
 
-    pub fn dl_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn dl_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.dl_fn = Some(callback);
+        self
     }
 
-    pub fn mtx_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn mtx_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.mtx_fn = Some(callback);
+        self
     }
 
-    pub fn lookat_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn lookat_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, LookatCount) -> DoDefaultOutput,
     {
         self.lookat_fn = Some(callback);
+        self
     }
 
-    pub fn light_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn light_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.light_fn = Some(callback);
+        self
     }
 
-    pub fn lightsn_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn lightsn_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, LightsNum) -> DoDefaultOutput,
     {
         self.lightsn_fn = Some(callback);
+        self
     }
 
-    pub fn seg_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn seg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, u8) -> DoDefaultOutput,
     {
         self.seg_fn = Some(callback);
+        self
     }
 
-    pub fn vtx_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn vtx_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput,
     {
         self.vtx_fn = Some(callback);
+        self
     }
 
-    pub fn vp_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn vp_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
     {
         self.vp_fn = Some(callback);
+        self
     }
 
-    pub fn uctext_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn uctext_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
     {
         self.uctext_fn = Some(callback);
+        self
     }
 
-    pub fn ucdata_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn ucdata_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
     {
         self.ucdata_fn = Some(callback);
+        self
     }
 
-    pub fn dram_callback<F>(&mut self, callback: &'cls mut F)
+    pub fn dram_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU16) -> DoDefaultOutput,
     {
         self.dram_fn = Some(callback);
+        self
     }
 }
 

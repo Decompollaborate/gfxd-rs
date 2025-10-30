@@ -54,7 +54,9 @@ impl<'d> Disassembler<'d> {
         });
         // `as_ref` is needed, otherwise the string gets consumed and this ends
         // up pointing to itself or something weird like that.
-        let dynamic_ptr = dynamic.as_ref().and_then(|x| NonNullConst::new(x.as_ptr().cast()));
+        let dynamic_ptr = dynamic
+            .as_ref()
+            .and_then(|x| NonNullConst::new(x.as_ptr().cast()));
 
         {
             let mut lib_data_wrap = lib_data.gfxd_set();
