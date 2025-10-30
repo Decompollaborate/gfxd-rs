@@ -80,7 +80,7 @@ impl MacroInfo {
         let macro_bytes = unsafe { CStr::from_ptr(macro_name_raw.as_ptr()) }.to_bytes();
 
         // SAFETY: gfxd only uses ASCII.
-        let macro_str = unsafe { str::from_utf8_unchecked(macro_bytes) };
+        let macro_str = unsafe { core::str::from_utf8_unchecked(macro_bytes) };
 
         Some(macro_str)
     }

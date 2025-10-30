@@ -1,6 +1,3 @@
 ## General settings
 
 ##### `void gfxd_endian(int endian, int wordsize)`
-
-##### `void gfxd_enable(int cap)`
-##### `void gfxd_disable(int cap)`

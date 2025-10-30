@@ -25,7 +25,7 @@ pub struct Disassembler<'d> {
 
 impl<'d> Disassembler<'d> {
     #[must_use]
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             dynamic: None,
             stop_on_invalid: true,
@@ -36,28 +36,28 @@ impl<'d> Disassembler<'d> {
         }
     }
 
-    pub const fn dynamic(&mut self, dynamic: Option<&'d str>) -> &mut Self {
+    pub fn dynamic(&mut self, dynamic: Option<&'d str>) -> &mut Self {
         self.dynamic = dynamic;
         self
     }
 
-    pub const fn stop_on_invalid(&mut self, value: bool) -> &mut Self {
+    pub fn stop_on_invalid(&mut self, value: bool) -> &mut Self {
         self.stop_on_invalid = value;
         self
     }
-    pub const fn stop_on_end(&mut self, value: bool) -> &mut Self {
+    pub fn stop_on_end(&mut self, value: bool) -> &mut Self {
         self.stop_on_end = value;
         self
     }
-    pub const fn emit_dec_color(&mut self, value: bool) -> &mut Self {
+    pub fn emit_dec_color(&mut self, value: bool) -> &mut Self {
         self.emit_dec_color = value;
         self
     }
-    pub const fn emit_q_macro(&mut self, value: bool) -> &mut Self {
+    pub fn emit_q_macro(&mut self, value: bool) -> &mut Self {
         self.emit_q_macro = value;
         self
     }
-    pub const fn emit_ext_macro(&mut self, value: bool) -> &mut Self {
+    pub fn emit_ext_macro(&mut self, value: bool) -> &mut Self {
         self.emit_ext_macro = value;
         self
     }

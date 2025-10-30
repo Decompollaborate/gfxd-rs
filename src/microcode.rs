@@ -26,7 +26,7 @@ impl Microcode {
 }
 
 impl Microcode {
-    pub(crate) const fn to_microcode_ptr(self) -> gfxd_ucode_t {
+    pub(crate) fn to_microcode_ptr(self) -> gfxd_ucode_t {
         match self {
             Microcode::F3d => unsafe { gfxd_f3d },
             Microcode::F3db => unsafe { gfxd_f3db },
