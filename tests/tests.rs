@@ -498,6 +498,11 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
 
     let out = Disassembler::new()
         .dynamic(dynamic)
+        .stop_on_invalid(false)
+        .stop_on_end(false)
+        .emit_dec_color(false)
+        .emit_q_macro(false)
+        .emit_ext_macro(true)
         .disassemble(input, microcode, &mut customizer);
 
     let tracker = Tracker {
@@ -998,6 +1003,28 @@ fn test_dynamic() {
 
     let expected_tracker = Tracker {
         vtx: HashMap::from_iter([(Address(0x000002E0), (12,))]),
+        ..Tracker::default()
+    };
+    assert_eq!(expected_tracker, tracker);
+}
+
+#[test]
+fn test_options() {
+    static INPUT: [u8; 0x10] = [
+        0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, //
+        0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, //
+    ];
+    static OUTPUT: &str = "\
+{
+    gsSPEndDisplayList(),
+    (Gfx){0x11111111, 0x11111111},
+}
+";
+
+    let (out, tracker) = callback_common(&INPUT, Microcode::F3dex, None);
+    assert_eq!(OUTPUT, out);
+
+    let expected_tracker = Tracker {
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);

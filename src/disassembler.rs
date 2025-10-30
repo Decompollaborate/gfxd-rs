@@ -16,18 +16,49 @@ use crate::{
 pub struct Disassembler<'d> {
     // TODO: endian and wordsize
     dynamic: Option<&'d str>,
-    // TODO: enable/disable cap
+    stop_on_invalid: bool,
+    stop_on_end: bool,
+    emit_dec_color: bool,
+    emit_q_macro: bool,
+    emit_ext_macro: bool,
 }
 
 impl<'d> Disassembler<'d> {
     #[must_use]
-    #[expect(clippy::new_without_default)]
     pub const fn new() -> Self {
-        Self { dynamic: None }
+        Self {
+            dynamic: None,
+            stop_on_invalid: true,
+            stop_on_end: true,
+            emit_dec_color: false,
+            emit_q_macro: false,
+            emit_ext_macro: false,
+        }
     }
 
     pub const fn dynamic(&mut self, dynamic: Option<&'d str>) -> &mut Self {
         self.dynamic = dynamic;
+        self
+    }
+
+    pub const fn stop_on_invalid(&mut self, value: bool) -> &mut Self {
+        self.stop_on_invalid = value;
+        self
+    }
+    pub const fn stop_on_end(&mut self, value: bool) -> &mut Self {
+        self.stop_on_end = value;
+        self
+    }
+    pub const fn emit_dec_color(&mut self, value: bool) -> &mut Self {
+        self.emit_dec_color = value;
+        self
+    }
+    pub const fn emit_q_macro(&mut self, value: bool) -> &mut Self {
+        self.emit_q_macro = value;
+        self
+    }
+    pub const fn emit_ext_macro(&mut self, value: bool) -> &mut Self {
+        self.emit_ext_macro = value;
         self
     }
 
@@ -61,19 +92,15 @@ impl<'d> Disassembler<'d> {
         {
             let mut lib_data_wrap = lib_data.gfxd_set();
 
-            unsafe { self.disassemble_impl(data, microcode, &mut lib_data_wrap, dynamic_ptr) };
+            self.disassemble_impl(data, microcode, &mut lib_data_wrap, dynamic_ptr);
         }
 
         lib_data.consume()
     }
 
-    /// # SAFETY
-    ///
-    /// `gfxd_udata_set` must have been called with a valid pointer to the
-    /// current `LibData` instance.
     // Use a wrapper function to make sure lib_data does not get dropped too
     // soon.
-    unsafe fn disassemble_impl(
+    fn disassemble_impl(
         self,
         data: &[u8],
         microcode: Microcode,
@@ -95,9 +122,32 @@ impl<'d> Disassembler<'d> {
             gfxd_sys::settings::gfxd_target(Some(microcode.to_microcode_ptr()));
         }
 
+        // Set the dynamic arg, if any
         unsafe {
             gfxd_sys::settings::gfxd_dynamic(dynamic);
         }
+
+        // Set the options
+        set_feature_option(
+            self.stop_on_invalid,
+            gfxd_sys::settings::FeatureOption::gfxd_stop_on_invalid,
+        );
+        set_feature_option(
+            self.stop_on_end,
+            gfxd_sys::settings::FeatureOption::gfxd_stop_on_end,
+        );
+        set_feature_option(
+            self.emit_dec_color,
+            gfxd_sys::settings::FeatureOption::gfxd_emit_dec_color,
+        );
+        set_feature_option(
+            self.emit_q_macro,
+            gfxd_sys::settings::FeatureOption::gfxd_emit_q_macro,
+        );
+        set_feature_option(
+            self.emit_ext_macro,
+            gfxd_sys::settings::FeatureOption::gfxd_emit_ext_macro,
+        );
 
         // Run
         lib_data_wrap.do_before();
@@ -105,5 +155,21 @@ impl<'d> Disassembler<'d> {
             gfxd_sys::execution::gfxd_execute();
         }
         lib_data_wrap.do_after();
+    }
+}
+
+fn set_feature_option(on: bool, cap: gfxd_sys::settings::FeatureOption) {
+    unsafe {
+        if on {
+            gfxd_sys::settings::gfxd_enable(cap);
+        } else {
+            gfxd_sys::settings::gfxd_disable(cap);
+        }
+    }
+}
+
+impl Default for Disassembler<'_> {
+    fn default() -> Self {
+        Self::new()
     }
 }
