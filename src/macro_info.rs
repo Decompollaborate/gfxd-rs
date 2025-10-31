@@ -205,9 +205,9 @@ impl ArgValue {
 impl fmt::Display for ArgValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ArgValue::I(x) => write!(f, "{x}"),
-            ArgValue::U(x) => write!(f, "0x{x:08X}"),
-            ArgValue::F(x) => write!(f, "{x}"),
+            ArgValue::I(x) => write!(f, "{}", x),
+            ArgValue::U(x) => write!(f, "0x{:08X}", x),
+            ArgValue::F(x) => write!(f, "{}", x),
         }
     }
 }

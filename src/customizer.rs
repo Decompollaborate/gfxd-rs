@@ -532,9 +532,8 @@ impl Customizer<'_> {
                     let mut printer = Printer::new();
                     let mut info = MacroInfo::new();
                     let dram = Address(dram);
-                    let size = size
-                        .try_into()
-                        .expect("This value should be less than 0x4096");
+                    let size_raw = size.get().try_into().expect("This value should be less than 0x4096");
+                    let size = unsafe { NonZeroU16::new_unchecked(size_raw)};
                     (closure)(&mut printer, &mut info, dram, size)
                 } else {
                     panic!("dram_fn closure was None?")

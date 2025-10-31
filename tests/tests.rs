@@ -141,7 +141,7 @@ fn test_vtx_callback() {
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, num);
 
-        printer.write_str(&format!("D_{vtx}"));
+        printer.write_str(&format!("D_{}", vtx));
         DoDefaultOutput::Override
     };
 
@@ -215,7 +215,7 @@ fn test_vtx_callback_default() {
     let out = Disassembler::new().disassemble(
         &INPUT,
         Microcode::F3dex,
-        &mut Customizer::new()
+        Customizer::new()
             .macro_fn(&mut macro_fn)
             .before_after_execution_callback(&mut before, &mut after)
             .vtx_callback(&mut vtx_callback),
@@ -282,19 +282,20 @@ fn test_macro_info() {
         let macro_data = info.macro_data();
         printer.write_str("    /* ");
         for x in macro_data {
-            printer.write_str(&format!("{x:02X}"));
+            printer.write_str(&format!("{:02X}", x));
         }
         printer.write_str(" */\n");
 
         let arg_count = info.arg_count();
-        printer.write_str(&format!("    /* arg_count: {arg_count} */\n"));
+        printer.write_str(&format!("    /* arg_count: {} */\n", arg_count));
         for i in 0..arg_count {
             let arg_type = info.arg_type(i).unwrap();
             let arg_name = info.arg_name(i).unwrap();
             let arg_value = info.arg_value(i).unwrap();
             let arg_valid = info.arg_valid(i).unwrap();
             printer.write_str(&format!(
-                "        /* arg {i}: {arg_name}, type: {arg_type}, value: {arg_value}, valid: {arg_valid} */"
+                "        /* arg {}: {}, type: {}, value: {}, valid: {} */",
+                i, arg_name, arg_type, arg_value, arg_valid
             ));
 
             printer.write_str(" /* ");
@@ -307,14 +308,14 @@ fn test_macro_info() {
         printer.write_str("    ");
 
         let offset = info.macro_offset();
-        printer.write_str(&format!("/* 0x{offset:02X} */ "));
+        printer.write_str(&format!("/* 0x{:02X} */ ", offset));
 
         let ret = printer.macro_dflt();
 
         printer.write_str(",");
 
         let packets = info.macro_packets();
-        printer.write_str(&format!(" /* packets: {packets} */"));
+        printer.write_str(&format!(" /* packets: {} */", packets));
 
         printer.write_str("\n\n");
         ret
@@ -360,7 +361,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut tlut_callback = |printer: &mut Printer, _info: &mut _, tlut, index, count| {
         tlut_tracker.insert(tlut, (index, count));
 
-        printer.write_str(&format!("D_{tlut}"));
+        printer.write_str(&format!("D_{}", tlut));
         DoDefaultOutput::Override
     };
 
@@ -369,7 +370,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
         |printer: &mut Printer, _info: &mut _, timg, fmt, siz, width, height, pal| {
             timg_tracker.insert(timg, (fmt, siz, width, height, pal));
 
-            printer.write_str(&format!("D_{timg}"));
+            printer.write_str(&format!("D_{}", timg));
             DoDefaultOutput::Override
         };
 
@@ -377,7 +378,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut cimg_callback = |printer: &mut Printer, _info: &mut _, cimg, fmt, siz, width| {
         cimg_tracker.insert(cimg, (fmt, siz, width));
 
-        printer.write_str(&format!("D_{cimg}"));
+        printer.write_str(&format!("D_{}", cimg));
         DoDefaultOutput::Override
     };
 
@@ -385,7 +386,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut zimg_callback = |printer: &mut Printer, _info: &mut _, zimg| {
         zimg_tracker.insert(zimg, ());
 
-        printer.write_str(&format!("D_{zimg}"));
+        printer.write_str(&format!("D_{}", zimg));
         DoDefaultOutput::Override
     };
 
@@ -393,7 +394,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut dl_callback = |printer: &mut Printer, _info: &mut _, dl| {
         dl_tracker.insert(dl, ());
 
-        printer.write_str(&format!("D_{dl}"));
+        printer.write_str(&format!("D_{}", dl));
         DoDefaultOutput::Override
     };
 
@@ -401,7 +402,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut mtx_callback = |printer: &mut Printer, _info: &mut _, mtx| {
         mtx_tracker.insert(mtx, ());
 
-        printer.write_str(&format!("D_{mtx}"));
+        printer.write_str(&format!("D_{}", mtx));
         DoDefaultOutput::Override
     };
 
@@ -409,7 +410,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut lookat_callback = |printer: &mut Printer, _info: &mut _, lookat, count| {
         lookat_tracker.insert(lookat, (count,));
 
-        printer.write_str(&format!("D_{lookat}"));
+        printer.write_str(&format!("D_{}", lookat));
         DoDefaultOutput::Override
     };
 
@@ -417,7 +418,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut light_callback = |printer: &mut Printer, _info: &mut _, light| {
         light_tracker.insert(light, ());
 
-        printer.write_str(&format!("D_{light}"));
+        printer.write_str(&format!("D_{}", light));
         DoDefaultOutput::Override
     };
 
@@ -425,7 +426,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut lightsn_callback = |printer: &mut Printer, _info: &mut _, lightsn, num| {
         lightsn_tracker.insert(lightsn, (num,));
 
-        printer.write_str(&format!("D_{lightsn}"));
+        printer.write_str(&format!("D_{}", lightsn));
         DoDefaultOutput::Override
     };
 
@@ -433,7 +434,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut seg_callback = |printer: &mut Printer, _info: &mut _, seg, num| {
         seg_tracker.insert(seg, (num,));
 
-        printer.write_str(&format!("D_{seg}"));
+        printer.write_str(&format!("D_{}", seg));
         DoDefaultOutput::Override
     };
 
@@ -441,7 +442,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut vtx_callback = |printer: &mut Printer, _info: &mut _, vtx, num| {
         vtx_tracker.insert(vtx, (num,));
 
-        printer.write_str(&format!("D_{vtx}"));
+        printer.write_str(&format!("D_{}", vtx));
         DoDefaultOutput::Override
     };
 
@@ -449,7 +450,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut vp_callback = |printer: &mut Printer, _info: &mut _, vp| {
         vp_tracker.insert(vp, ());
 
-        printer.write_str(&format!("D_{vp}"));
+        printer.write_str(&format!("D_{}", vp));
         DoDefaultOutput::Override
     };
 
@@ -457,7 +458,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut uctext_callback = |printer: &mut Printer, _info: &mut _, uctext, num| {
         uctext_tracker.insert(uctext, (num,));
 
-        printer.write_str(&format!("D_{uctext}"));
+        printer.write_str(&format!("D_{}", uctext));
         DoDefaultOutput::Override
     };
 
@@ -465,7 +466,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut ucdata_callback = |printer: &mut Printer, _info: &mut _, ucdata, num| {
         ucdata_tracker.insert(ucdata, (num,));
 
-        printer.write_str(&format!("D_{ucdata}"));
+        printer.write_str(&format!("D_{}", ucdata));
         DoDefaultOutput::Override
     };
 
@@ -473,7 +474,7 @@ fn callback_common(input: &[u8], microcode: Microcode, dynamic: Option<&str>) ->
     let mut dram_callback = |printer: &mut Printer, _info: &mut _, dram, num| {
         dram_tracker.insert(dram, (num,));
 
-        printer.write_str(&format!("D_{dram}"));
+        printer.write_str(&format!("D_{}", dram));
         DoDefaultOutput::Override
     };
 
