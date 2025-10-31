@@ -42,7 +42,7 @@ default = []
 std = ["gfxd-sys/std"]
 
 [dependencies]
-gfxd-sys = { git = "https://github.com/Decompollaborate/gfxd-sys.git", default-features = false }
+gfxd-sys = { git = "https://github.com/Decompollaborate/gfxd-sys.git", branch = "main", default-features = false }
 # gfxd-sys = { path = "../gfxd-sys/", default-features = false }
 
 [dev-dependencies]

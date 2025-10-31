@@ -153,7 +153,10 @@ fn test_vtx_callback() {
 
     let out = Disassembler::new().disassemble(&INPUT, Microcode::F3dex, &mut customizer);
     assert_eq!(OUTPUT, out);
-    assert_eq!(HashMap::from_iter([(Address(0x000002E0), 12)]), vtx_tracker);
+    assert_eq!(
+        HashMap::from_iter([(Address(0x000002E0), 12)].to_vec()),
+        vtx_tracker
+    );
 }
 
 #[test]
@@ -221,7 +224,10 @@ fn test_vtx_callback_default() {
             .vtx_callback(&mut vtx_callback),
     );
     assert_eq!(OUTPUT, out);
-    assert_eq!(HashMap::from_iter([(Address(0x000002E0), 12)]), vtx_tracker);
+    assert_eq!(
+        HashMap::from_iter([(Address(0x000002E0), 12)].to_vec()),
+        vtx_tracker
+    );
 }
 
 #[test]
@@ -588,9 +594,11 @@ fn test_image_callback_ci4() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        tlut: HashMap::from_iter([(Address(0x06002000), (Some(0), TlutCount::Pal16))]),
-        timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))]),
-        vtx: HashMap::from_iter([(Address(0x06006000), (4,))]),
+        tlut: HashMap::from_iter([(Address(0x06002000), (Some(0), TlutCount::Pal16))].to_vec()),
+        timg: HashMap::from_iter(
+            [(Address(0x06004000), (TexFmt::CI, TexSiz::Siz4b, 32, 32, 0))].to_vec(),
+        ),
+        vtx: HashMap::from_iter([(Address(0x06006000), (4,))].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -658,9 +666,11 @@ fn test_image_callback_ci8() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        tlut: HashMap::from_iter([(Address(0x06002000), (None, TlutCount::Pal256))]),
-        timg: HashMap::from_iter([(Address(0x06004000), (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))]),
-        vtx: HashMap::from_iter([(Address(0x06006000), (4,))]),
+        tlut: HashMap::from_iter([(Address(0x06002000), (None, TlutCount::Pal256))].to_vec()),
+        timg: HashMap::from_iter(
+            [(Address(0x06004000), (TexFmt::CI, TexSiz::Siz8b, 56, 36, 0))].to_vec(),
+        ),
+        vtx: HashMap::from_iter([(Address(0x06006000), (4,))].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -685,8 +695,10 @@ fn test_framebuffer() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        cimg: HashMap::from_iter([(Address(0x80800000), (TexFmt::Rgba, TexSiz::Siz16b, 320))]),
-        zimg: HashMap::from_iter([(Address(0x80900000), ())]),
+        cimg: HashMap::from_iter(
+            [(Address(0x80800000), (TexFmt::Rgba, TexSiz::Siz16b, 320))].to_vec(),
+        ),
+        zimg: HashMap::from_iter([(Address(0x80900000), ())].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -711,8 +723,8 @@ fn test_dl_mtx() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        dl: HashMap::from_iter([(Address(0x05000200), ()), (Address(0x05000600), ())]),
-        mtx: HashMap::from_iter([(Address(0x05000400), ())]),
+        dl: HashMap::from_iter([(Address(0x05000200), ()), (Address(0x05000600), ())].to_vec()),
+        mtx: HashMap::from_iter([(Address(0x05000400), ())].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -742,12 +754,15 @@ fn test_look_at_viewport() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        lookat: HashMap::from_iter([
-            (Address(0x05000220), (LookatCount::N2,)),
-            (Address(0x05000210), (LookatCount::N1,)),
-            (Address(0x05000200), (LookatCount::N1,)),
-        ]),
-        vp: HashMap::from_iter([(Address(0x06006000), ())]),
+        lookat: HashMap::from_iter(
+            [
+                (Address(0x05000220), (LookatCount::N2,)),
+                (Address(0x05000210), (LookatCount::N1,)),
+                (Address(0x05000200), (LookatCount::N1,)),
+            ]
+            .to_vec(),
+        ),
+        vp: HashMap::from_iter([(Address(0x06006000), ())].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -819,16 +834,19 @@ fn test_lights() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        light: HashMap::from_iter([(Address(0x05000200), ())]),
-        lightsn: HashMap::from_iter([
-            (Address(0x05001000), (LightsNum::NumLights1,)),
-            (Address(0x05002000), (LightsNum::NumLights2,)),
-            (Address(0x05003000), (LightsNum::NumLights3,)),
-            (Address(0x05004000), (LightsNum::NumLights4,)),
-            (Address(0x05005000), (LightsNum::NumLights5,)),
-            (Address(0x05006000), (LightsNum::NumLights6,)),
-            (Address(0x05007000), (LightsNum::NumLights7,)),
-        ]),
+        light: HashMap::from_iter([(Address(0x05000200), ())].to_vec()),
+        lightsn: HashMap::from_iter(
+            [
+                (Address(0x05001000), (LightsNum::NumLights1,)),
+                (Address(0x05002000), (LightsNum::NumLights2,)),
+                (Address(0x05003000), (LightsNum::NumLights3,)),
+                (Address(0x05004000), (LightsNum::NumLights4,)),
+                (Address(0x05005000), (LightsNum::NumLights5,)),
+                (Address(0x05006000), (LightsNum::NumLights6,)),
+                (Address(0x05007000), (LightsNum::NumLights7,)),
+            ]
+            .to_vec(),
+        ),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -881,24 +899,27 @@ fn test_seg() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        seg: HashMap::from_iter([
-            (Address(0x00000000), (0x00,)),
-            (Address(0x00001000), (0x01,)),
-            (Address(0x00002000), (0x02,)),
-            (Address(0x00003000), (0x03,)),
-            (Address(0x00004000), (0x04,)),
-            (Address(0x00005000), (0x05,)),
-            (Address(0x00006000), (0x06,)),
-            (Address(0x00007000), (0x07,)),
-            (Address(0x00008000), (0x08,)),
-            (Address(0x00009000), (0x09,)),
-            (Address(0x0000A000), (0x0A,)),
-            (Address(0x0000B000), (0x0B,)),
-            (Address(0x0000C000), (0x0C,)),
-            (Address(0x0000D000), (0x0D,)),
-            (Address(0x0000E000), (0x0E,)),
-            (Address(0x0000F000), (0x0F,)),
-        ]),
+        seg: HashMap::from_iter(
+            [
+                (Address(0x00000000), (0x00,)),
+                (Address(0x00001000), (0x01,)),
+                (Address(0x00002000), (0x02,)),
+                (Address(0x00003000), (0x03,)),
+                (Address(0x00004000), (0x04,)),
+                (Address(0x00005000), (0x05,)),
+                (Address(0x00006000), (0x06,)),
+                (Address(0x00007000), (0x07,)),
+                (Address(0x00008000), (0x08,)),
+                (Address(0x00009000), (0x09,)),
+                (Address(0x0000A000), (0x0A,)),
+                (Address(0x0000B000), (0x0B,)),
+                (Address(0x0000C000), (0x0C,)),
+                (Address(0x0000D000), (0x0D,)),
+                (Address(0x0000E000), (0x0E,)),
+                (Address(0x0000F000), (0x0F,)),
+            ]
+            .to_vec(),
+        ),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -925,14 +946,20 @@ fn test_ucode() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        uctext: HashMap::from_iter([
-            (Address(0x80004000), (NonZeroU32::new(0x1000).unwrap(),)),
-            (Address(0x80008000), (NonZeroU32::new(0x1000).unwrap(),)),
-        ]),
-        ucdata: HashMap::from_iter([
-            (Address(0x80006000), (NonZeroU32::new(0x0800).unwrap(),)),
-            (Address(0x8000A000), (NonZeroU32::new(0x0400).unwrap(),)),
-        ]),
+        uctext: HashMap::from_iter(
+            [
+                (Address(0x80004000), (NonZeroU32::new(0x1000).unwrap(),)),
+                (Address(0x80008000), (NonZeroU32::new(0x1000).unwrap(),)),
+            ]
+            .to_vec(),
+        ),
+        ucdata: HashMap::from_iter(
+            [
+                (Address(0x80006000), (NonZeroU32::new(0x0800).unwrap(),)),
+                (Address(0x8000A000), (NonZeroU32::new(0x0400).unwrap(),)),
+            ]
+            .to_vec(),
+        ),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -957,10 +984,13 @@ fn test_dram() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        dram: HashMap::from_iter([
-            (Address(0x88888888), (NonZeroU16::new(0x14).unwrap(),)),
-            (Address(0x80888888), (NonZeroU16::new(0x14).unwrap(),)),
-        ]),
+        dram: HashMap::from_iter(
+            [
+                (Address(0x88888888), (NonZeroU16::new(0x14).unwrap(),)),
+                (Address(0x80888888), (NonZeroU16::new(0x14).unwrap(),)),
+            ]
+            .to_vec(),
+        ),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
@@ -1003,7 +1033,7 @@ fn test_dynamic() {
     assert_eq!(OUTPUT, out);
 
     let expected_tracker = Tracker {
-        vtx: HashMap::from_iter([(Address(0x000002E0), (12,))]),
+        vtx: HashMap::from_iter([(Address(0x000002E0), (12,))].to_vec()),
         ..Tracker::default()
     };
     assert_eq!(expected_tracker, tracker);
