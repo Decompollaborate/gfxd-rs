@@ -66,7 +66,7 @@ fn test_basic() {
 ";
 
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
-        /* Print a 4 spaces before each macro, and a comma and newline after each macro */
+        /* Print 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
         printer.write_str(",\n");
@@ -123,7 +123,7 @@ fn test_vtx_callback() {
 ";
 
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
-        /* Print a 4 spaces before each macro, and a comma and newline after each macro */
+        /* Print 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
         printer.write_str(",\n");
@@ -193,7 +193,7 @@ fn test_vtx_callback_default() {
 ";
 
     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
-        /* Print a 4 spaces before each macro, and a comma and newline after each macro */
+        /* Print 4 spaces before each macro, and a comma and newline after each macro */
         printer.write_str("    ");
         let ret = printer.macro_dflt(); /* Execute the default macro handler */
         printer.write_str(",\n");

@@ -42,8 +42,8 @@ default = []
 std = ["gfxd-sys/std"]
 
 [dependencies]
-gfxd-sys = { git = "https://github.com/Decompollaborate/gfxd-sys.git", branch = "main", default-features = false }
-# gfxd-sys = { path = "../gfxd-sys/", default-features = false }
+gfxd-sys = { version = "0.1", git = "https://github.com/Decompollaborate/gfxd-sys.git", branch = "main", default-features = false }
+# gfxd-sys = { version = "0.1", path = "../gfxd-sys/", default-features = false }
 
 [dev-dependencies]
 pretty_assertions = ">=1.0, <1.3"

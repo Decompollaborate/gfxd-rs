@@ -1,3 +1,0 @@
-## General settings
-
-##### `void gfxd_endian(int endian, int wordsize)`
