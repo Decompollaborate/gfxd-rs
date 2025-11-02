@@ -11,6 +11,58 @@ use crate::{
 
 // TODO: figure out where and how to expose gfxd_arg_callbacks
 
+/// `Gfx` packet macro disassembler.
+///
+/// This struct allows configuring general settings that control the generated
+/// output. Once the disassembler is configured, call [`disassemble`] to
+/// produce a string with the disassembly of the passed Gfx packets.
+///
+/// Refer to the [`Customizer`] struct to further customize how each `Gfx`
+/// macro is outputted or register callbacks for the different kinds of macros.
+///
+/// ## Examples
+///
+/// Disassemble F3DEX packets without any kind of customization
+///
+/// ```rust
+/// use gfxd_rs::{Customizer, Disassembler, Microcode};
+///
+/// pub fn plain_disasm_f3dex(data: &[u8]) -> String {
+///     let mut customizer = Customizer::new();
+///
+///     Disassembler::new()
+///         .disassemble(data, Microcode::F3dex, &mut customizer)
+/// }
+/// ```
+///
+/// Use a dynamic argument and print each macro on a different line.
+///
+/// ```rust
+/// use gfxd_rs::{Customizer, Disassembler, Microcode};
+///
+/// pub fn disasm_pretty(data: &[u8], microcode: Microcode, dynamic: &str) -> String {
+///     let mut customizer = Customizer::new();
+///
+///     // This has to be binded to a local variable to avoid dropping it too soon.
+///     let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
+///         // Write 4 spaces.
+///         printer.write_str("    ");
+///         // Call the original macro handler, to emit the macro as-is.
+///         let ret = printer.macro_dflt();
+///         // Write a newline after the macro.
+///         printer.write_str(",\n");
+///         ret
+///     };
+///     customizer
+///         .macro_fn(&mut macro_fn)
+///
+///     Disassembler::new()
+///         .dynamic(Some(dynamic))
+///         .disassemble(data, microcode, &mut customizer)
+/// }
+/// ```
+///
+/// [`disassemble`]: Disassembler::disassemble
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Disassembler<'d> {
     // TODO: endian and wordsize
@@ -35,32 +87,93 @@ impl<'d> Disassembler<'d> {
         }
     }
 
+    /// Enable or disable the use of dynamic `g` macros instead of static `gs`
+    /// macros, and select the dynamic display list pointer argument to be used.
+    ///
+    /// If `Some`, this value will be used by [`macro_dflt`] as the first
+    /// argument to dynamic macros.
+    /// If `None`, dynamic macros are disabled and `gs` macros are used.
+    /// Defaults to `None`.
+    ///
+    /// Also affects the result of [`macro_name`], as it will return either the
+    /// dynamic or static version of the macro name as selected by this
+    /// setting.
+    ///
+    /// [`macro_dflt`]: crate::MacroPrinter::macro_dflt
+    /// [`macro_name`]: crate::MacroInfo::macro_name
     pub fn dynamic(&mut self, dynamic: Option<&'d str>) -> &mut Self {
         self.dynamic = dynamic;
         self
     }
 
+    /// Stop execution when encountering an invalid macro.
+    ///
+    /// Enabled by default.
     pub fn stop_on_invalid(&mut self, value: bool) -> &mut Self {
         self.stop_on_invalid = value;
         self
     }
+    /// Stop execution when encountering a [`SPBranchList`] or
+    /// [`SPEndDisplayList`].
+    ///
+    /// Enabled by default.
+    ///
+    /// [`SPBranchList`]: crate::MacroId::SPBranchList
+    /// [`SPEndDisplayList`]: crate::MacroId::SPEndDisplayList
     pub fn stop_on_end(&mut self, value: bool) -> &mut Self {
         self.stop_on_end = value;
         self
     }
+    /// Print color components as decimal instead of hexadecimal.
+    ///
+    /// Disabled by default.
     pub fn emit_dec_color(&mut self, value: bool) -> &mut Self {
         self.emit_dec_color = value;
         self
     }
+    /// Print fixed-point conversion `q` macros for fixed-point values.
+    ///
+    /// Disabled by default.
     pub fn emit_q_macro(&mut self, value: bool) -> &mut Self {
         self.emit_q_macro = value;
         self
     }
+    /// Emit non-standard macros.
+    ///
+    /// Some commands are valid (though possibly meaningless), but have no
+    /// macros associated with them, such as a standalone `G_RDPHALF_1`.
+    /// When this feature is enabled, such a command will produce a
+    /// non-standard [`gsDPHalf1`] macro instead of a raw hexadecimal command.
+    ///
+    /// Also enables some non-standard multi-packet texture loading macros.
+    ///
+    /// Disabled by default.
+    ///
+    /// [`gsDPHalf1`]: crate::MacroId::DPHalf1
     pub fn emit_ext_macro(&mut self, value: bool) -> &mut Self {
         self.emit_ext_macro = value;
         self
     }
 
+    /// Start executing `gfxd` with the current settings.
+    ///
+    /// For each macro, the macro handler registered with [`macro_fn`] is
+    /// called.
+    ///
+    /// Execution ends when:
+    /// - the input ends,
+    /// - the macro handler returns [`Stop`],
+    /// - when an invalid macro is encountered and [`stop_on_invalid`] is
+    ///   enabled,
+    /// - or when [`SPBranchList`] or [`SPEndDisplayList`] is encountered and
+    ///   [`stop_on_end`] is enabled.
+    ///
+    /// [`macro_fn`]: Customizer::macro_fn
+    /// [`Stop`]: crate::MacroFnRet::Stop
+    /// [`stop_on_invalid`]: Disassembler::stop_on_invalid
+    /// [`stop_on_end`]: Disassembler::stop_on_end
+    /// [`SPBranchList`]: crate::MacroId::SPBranchList
+    /// [`SPEndDisplayList`]: crate::MacroId::SPEndDisplayList
     #[must_use]
     pub fn disassemble(
         self,
