@@ -55,6 +55,17 @@ impl MacroPrinter {
         self.printer.write_arg_value(typ, value);
     }
 
+    /// The default macro handler.
+    ///
+    /// Outputs the macro name, dynamic display list pointer if one has been
+    /// specified, and then each argument in order using the function
+    /// registered using [`arg_fn`] ([`arg_dflt`] by default).
+    ///
+    /// Because it is designed to be extended, it only outputs the macro text,
+    /// without any whitespace or punctuation before or after.
+    ///
+    /// [`arg_fn`]: crate::Customizer::arg_fn
+    /// [`arg_dflt`]: MacroPrinter::arg_dflt
     pub fn macro_dflt(&mut self) -> MacroFnRet {
         let ret = unsafe { gfxd_sys::handlers::gfxd_macro_dflt() };
 
@@ -64,6 +75,13 @@ impl MacroPrinter {
         }
     }
 
+    /// The default argument handler for [`macro_dflt`].
+    ///
+    /// For the argument with index `arg_num`, calls `arg_callbacks`, and
+    /// prints the argument value if the callback returns zero, or if there is
+    /// no callback for the given argument.
+    ///
+    /// [`macro_dflt`]: MacroPrinter::macro_dflt
     pub fn arg_dflt(&mut self, arg_num: i32) {
         unsafe {
             gfxd_sys::handlers::gfxd_arg_dflt(arg_num as _);

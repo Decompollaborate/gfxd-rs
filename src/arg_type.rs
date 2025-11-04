@@ -3,6 +3,7 @@
 
 use core::{convert::TryFrom, fmt};
 
+/// The type of an Gfx argument.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(non_camel_case_types)]
 pub enum ArgType {

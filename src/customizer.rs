@@ -615,6 +615,22 @@ impl<'cls> Customizer<'cls> {
     /// disassembled output to the user.
     ///
     /// Both callbacks are called only once.
+    ///
+    /// ## Examples
+    ///
+    /// ```rust
+    /// use gfxd_rs::{Customizer, Printer};
+    ///
+    /// let mut before = |printer: &mut Printer| {
+    ///     printer.write_str("{\n");
+    /// };
+    /// let mut after = |printer: &mut Printer| {
+    ///     printer.write_str("}\n");
+    /// };
+    ///
+    /// let mut customizer = Customizer::new();
+    /// customizer.before_after_execution_callback(&mut before, &mut after);
+    /// ```
     pub fn before_after_execution_callback<B, A>(
         &mut self,
         before: &'cls mut B,
@@ -645,6 +661,33 @@ impl<'cls> Customizer<'cls> {
 }
 
 impl<'cls> Customizer<'cls> {
+    /// Replace the default macro handler.
+    ///
+    /// The user-defined macro handler may decide to extend the default
+    /// behavior by writing custom output with [`write_str`] and calling the
+    /// original macro handler by calling [`macro_dflt`].
+    ///
+    /// ## Example
+    ///
+    /// Make the output pretier
+    ///
+    /// ```rust
+    /// use gfxd_rs::{Customizer, MacroPrinter};
+    ///
+    /// let mut macro_fn = |printer: &mut MacroPrinter, _info: &mut _| {
+    ///     /* Print 4 spaces before each macro, and a comma and newline after each macro */
+    ///     printer.write_str("    ");
+    ///     let ret = printer.macro_dflt(); /* Execute the default macro handler */
+    ///     printer.write_str(",\n");
+    ///     ret
+    /// };
+    ///
+    /// let mut customizer = Customizer::new();
+    /// customizer.macro_fn(&mut macro_fn);
+    /// ```
+    ///
+    /// [`write_str`]: MacroPrinter::write_str
+    /// [`macro_dflt`]: MacroPrinter::macro_dflt
     pub fn macro_fn<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut MacroPrinter, &mut MacroInfo) -> MacroFnRet,
@@ -654,6 +697,17 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Replace the default argument handler.
+    ///
+    /// The registered callback will be called by [`macro_dflt`] for each
+    /// argument in the current macro, not counting the dynamic display list
+    /// pointer if one has been specified.
+    ///
+    /// If the user has overriden the macro handler function and does not call
+    /// [`macro_dflt`] in the replacement, then the given callback will never
+    /// be called.
+    ///
+    /// [`macro_dflt`]: MacroPrinter::macro_dflt
     pub fn arg_fn<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut MacroPrinter, &mut MacroInfo, i32),
@@ -665,6 +719,20 @@ impl<'cls> Customizer<'cls> {
 }
 
 impl<'cls> Customizer<'cls> {
+    /// Register a callback for TLUTs (Texture Look Up Table), a.k.a. palettes.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the tlut address,
+    /// - the palette index and
+    /// - the number of colors.
     pub fn tlut_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, Option<u8>, TlutCount) -> DoDefaultOutput,
@@ -673,6 +741,23 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for textures of any kind.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the texture address,
+    /// - the texture format,
+    /// - the texture siz,
+    /// - the width,
+    /// - the height and
+    /// - the palette index.
     pub fn timg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(
@@ -690,6 +775,21 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for framebuffers.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the framebuffer address,
+    /// - the framebuffer format,
+    /// - the framebuffer siz and
+    /// - the width.
     pub fn cimg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, TexFmt, TexSiz, u16) -> DoDefaultOutput,
@@ -698,6 +798,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for depthbuffers.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the depthbuffer address.
     pub fn zimg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
@@ -706,6 +818,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for display lists.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the display list address.
     pub fn dl_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
@@ -714,6 +838,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for matrices.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the matrix address.
     pub fn mtx_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
@@ -722,6 +858,19 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for lookat arrays.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the lookat array address and
+    /// - the number of lookat structures.
     pub fn lookat_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, LookatCount) -> DoDefaultOutput,
@@ -730,6 +879,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for lights.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the light address.
     pub fn light_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
@@ -738,6 +899,19 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for lights N.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the light address and
+    /// - the number of diffuse lights.
     pub fn lightsn_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, LightsNum) -> DoDefaultOutput,
@@ -746,6 +920,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for segments.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the segment address.
     pub fn seg_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, u8) -> DoDefaultOutput,
@@ -754,6 +940,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for vertices.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the vertex address.
     pub fn vtx_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, i32) -> DoDefaultOutput,
@@ -762,6 +960,18 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for viewports.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the viewport address.
     pub fn vp_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address) -> DoDefaultOutput,
@@ -770,6 +980,19 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for microcode text.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the microcode text address and
+    /// - the microcode text size.
     pub fn uctext_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
@@ -778,6 +1001,19 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for microcode data.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the microcode data address and
+    /// - the microcode data size.
     pub fn ucdata_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU32) -> DoDefaultOutput,
@@ -786,6 +1022,19 @@ impl<'cls> Customizer<'cls> {
         self
     }
 
+    /// Register a callback for generic pointers.
+    ///
+    /// The callback may return [`DoDefaultOutput::DoDefault`] to make `gfxd`
+    /// to emit the default output for this argument, or
+    /// [`DoDefaultOutput::Override`] to avoid emitting the default one and
+    /// just use whatever the user printed.
+    ///
+    /// Emit any desired output by using the `Printer` argument, and inspect
+    /// information about the current macro with the `MacroInfo` argument.
+    ///
+    /// The other arguments are:
+    /// - the generic pointer and
+    /// - the data size.
     pub fn dram_callback<F>(&mut self, callback: &'cls mut F) -> &mut Self
     where
         F: FnMut(&mut Printer, &mut MacroInfo, Address, NonZeroU16) -> DoDefaultOutput,
@@ -801,13 +1050,23 @@ impl<'cls> Default for Customizer<'cls> {
     }
 }
 
+/// The return value of argument callbacks.
+///
+/// Decide if the argument callback should emit the default output or if it
+/// should emit no output at all.
+#[must_use]
 pub enum DoDefaultOutput {
+    /// Emit the default output.
+    ///
+    /// The user may still emit output before the default behavior.
     DoDefault,
+    /// Do not emit the default output for this argument.
     Override,
 }
 
 impl DoDefaultOutput {
     #[inline]
+    #[must_use]
     pub(crate) const fn into_ret(self) -> ffi::c_int {
         match self {
             Self::DoDefault => 0,
@@ -816,13 +1075,20 @@ impl DoDefaultOutput {
     }
 }
 
+/// Signal if `Gfx` packet processing should continue or stop after the current
+/// macro has been processed.
+#[must_use]
 pub enum MacroFnRet {
+    /// Continue processing the data stream.
     Continue,
+    /// Stop processing the data stream, even if there's more data left to be
+    /// processed.
     Stop,
 }
 
 impl MacroFnRet {
     #[inline]
+    #[must_use]
     pub(crate) const fn into_ret(self) -> ffi::c_int {
         match self {
             Self::Continue => 0,

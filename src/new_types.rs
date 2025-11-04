@@ -3,6 +3,7 @@
 
 use core::fmt;
 
+/// An address pointed by a `Gfx` macro.
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Address(pub u32);
 
@@ -18,10 +19,16 @@ impl fmt::Display for Address {
     }
 }
 
+/// How many colors a TLUT has.
+///
+/// The most common ones are `Pal16` and `Pal256`.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TlutCount {
+    /// 16 colors TLUT. Usually paired with CI4 textures.
     Pal16,
+    /// 256 colors TLUT. Usually paired with CI8 textures.
     Pal256,
+    /// Any other amount of colors. Very unusual.
     // This value is 14 bits wide, so a u16 is more than enough.
     Other(u16),
 }
@@ -36,13 +43,45 @@ impl TlutCount {
     }
 }
 
+/// The format of a texture.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TexFmt {
+    /// Explicit Red/Green/Blue/Alpha textures.
+    ///
+    /// Only supported with [`Siz16b`] and [`Siz32b`].
+    ///
+    /// [`Siz16b`]: TexSiz::Siz16b
+    /// [`Siz32b`]: TexSiz::Siz32b
     Rgba,
+    /// Luminance (Y) and two chrominance (UV).
+    ///
+    /// Only supported with [`Siz16b`].
+    ///
+    /// [`Siz16b`]: TexSiz::Siz16b
     Yuv,
+    /// Color indexed textures.
+    ///
+    /// Only supported with [`Siz8b`] and  [`Siz4b`].
+    ///
+    /// [`Siz8b`]: TexSiz::Siz8b
+    /// [`Siz4b`]: TexSiz::Siz4b
     CI,
+    /// Intensity with Alpha textures.
+    ///
+    /// Only supported with [`Siz16b`], [`Siz8b`] and  [`Siz4b`].
+    ///
+    /// [`Siz16b`]: TexSiz::Siz16b
+    /// [`Siz8b`]: TexSiz::Siz8b
+    /// [`Siz4b`]: TexSiz::Siz4b
     IA,
+    /// Intensity textures.
+    ///
+    /// Only supported with [`Siz8b`] and  [`Siz4b`].
+    ///
+    /// [`Siz8b`]: TexSiz::Siz8b
+    /// [`Siz4b`]: TexSiz::Siz4b
     I,
+    /// Other raw values.
     // This value is 3 bits wide, so a u8 is more than enough.
     Other(u8),
 }
@@ -84,6 +123,7 @@ impl TexSiz {
     }
 }
 
+/// How many macro packets the current macro actually refers to.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LookatCount {
     /// This macro does not correspond to a complete `gsSPLookAt`, but instead
@@ -113,18 +153,25 @@ impl LookatCount {
 /// `NUMLIGHTS_1`, making them indistinguishable from each other.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LightsNum {
+    /// 1 diffuse light.
     #[doc(alias = "NUMLIGHTS_1")]
     NumLights1 = 1,
+    /// 2 diffuse lights.
     #[doc(alias = "NUMLIGHTS_2")]
     NumLights2 = 2,
+    /// 3 diffuse lights.
     #[doc(alias = "NUMLIGHTS_3")]
     NumLights3 = 3,
+    /// 4 diffuse lights.
     #[doc(alias = "NUMLIGHTS_4")]
     NumLights4 = 4,
+    /// 5 diffuse lights.
     #[doc(alias = "NUMLIGHTS_5")]
     NumLights5 = 5,
+    /// 6 diffuse lights.
     #[doc(alias = "NUMLIGHTS_6")]
     NumLights6 = 6,
+    /// 7 diffuse lights.
     #[doc(alias = "NUMLIGHTS_7")]
     NumLights7 = 7,
 }

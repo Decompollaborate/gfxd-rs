@@ -3,8 +3,10 @@
 
 use core::{convert::TryFrom, fmt};
 
+/// An identifier for each `Gfx` macro.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(non_camel_case_types)]
+#[allow(missing_docs)]
 pub enum MacroId {
     Invalid = 0,
     DPFillRectangle = 1,
