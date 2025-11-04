@@ -5,11 +5,15 @@ use gfxd_sys::ptr::NonNullConst;
 
 use crate::{ArgType, ArgValue, MacroFnRet};
 
+/// An utility that allows writing to `gfxd`'s output buffer from inside
+/// user-defined callbacks.
 pub struct Printer {
     // Placeholder to avoid constructing this type
     _unit: (),
 }
 
+/// An utility to write to `gfxd`'s output buffer from macro-specific
+/// user-defined callbacks.
 pub struct MacroPrinter {
     printer: Printer,
 }
@@ -20,6 +24,7 @@ impl Printer {
         Self { _unit: () }
     }
 
+    /// Write the given str to the output buffer.
     pub fn write_str(&mut self, s: &str) {
         let buf = NonNullConst::from_ref(s).cast();
 
@@ -29,6 +34,7 @@ impl Printer {
         }
     }
 
+    /// Write the given Argument Value to the output buffer.
     pub fn write_arg_value(&mut self, typ: ArgType, value: &ArgValue) {
         let (_, v) = value.to_gfxd_value();
         let ptr = NonNullConst::from_ref(&v);
@@ -47,10 +53,12 @@ impl MacroPrinter {
         }
     }
 
+    /// Write the given str to the output buffer.
     pub fn write_str(&mut self, s: &str) {
         self.printer.write_str(s);
     }
 
+    /// Write the given Argument Value to the output buffer.
     pub fn write_arg_value(&mut self, typ: ArgType, value: &ArgValue) {
         self.printer.write_arg_value(typ, value);
     }

@@ -3,7 +3,9 @@
 
 use gfxd_sys::settings::{gfxd_f3d, gfxd_f3db, gfxd_f3dex, gfxd_f3dex2, gfxd_f3dexb, gfxd_ucode_t};
 
+/// The target microcode to decode the `Gfx` packets as.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[allow(missing_docs)]
 pub enum Microcode {
     F3d,
     F3db,
@@ -13,6 +15,7 @@ pub enum Microcode {
 }
 
 impl Microcode {
+    /// Get a `Microcode` variant from its name.
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "f3d" => Some(Self::F3d),

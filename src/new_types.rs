@@ -99,12 +99,17 @@ impl TexFmt {
     }
 }
 
+/// The bit size of a texture.
 // This value is 2 bits wide, so the enum should exhaust every posibility.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum TexSiz {
+    /// 4 bit per pixel.
     Siz4b,
+    /// 8 bit per pixel.
     Siz8b,
+    /// 16 bit per pixel.
     Siz16b,
+    /// 32 bit per pixel.
     Siz32b,
 }
 
