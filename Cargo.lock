@@ -42,7 +42,8 @@ dependencies = [
 [[package]]
 name = "gfxd-sys"
 version = "0.1.0"
-source = "git+https://github.com/Decompollaborate/gfxd-sys.git?branch=main#6ad267c140848d20a42cf00e046d94c5ffa2dba9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a263c39b539f6336c074a277b569285d0d979096ff87fac4b76084fb015378f"
 dependencies = [
  "cc",
  "libc",

@@ -15,9 +15,7 @@ readme = "README.md"
 keywords = [
     "disassembler",
     "n64",
-    "nintendo",
     "no_std",
-    "bindings",
 ]
 categories = [
     "parsing",
@@ -42,7 +40,7 @@ default = []
 std = ["gfxd-sys/std"]
 
 [dependencies]
-gfxd-sys = { version = "0.1", git = "https://github.com/Decompollaborate/gfxd-sys.git", branch = "main", default-features = false }
+gfxd-sys = { version = "0.1", default-features = false }
 # gfxd-sys = { version = "0.1", path = "../gfxd-sys/", default-features = false }
 
 [dev-dependencies]

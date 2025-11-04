@@ -38,7 +38,7 @@ use crate::{
 /// Use a dynamic argument and print each macro on a different line.
 ///
 /// ```rust
-/// use gfxd_rs::{Customizer, Disassembler, Microcode};
+/// use gfxd_rs::{Customizer, Disassembler, MacroPrinter, Microcode};
 ///
 /// pub fn disasm_pretty(data: &[u8], microcode: Microcode, dynamic: &str) -> String {
 ///     let mut customizer = Customizer::new();
@@ -54,7 +54,7 @@ use crate::{
 ///         ret
 ///     };
 ///     customizer
-///         .macro_fn(&mut macro_fn)
+///         .macro_fn(&mut macro_fn);
 ///
 ///     Disassembler::new()
 ///         .dynamic(Some(dynamic))
@@ -156,6 +156,14 @@ impl<'d> Disassembler<'d> {
     }
 
     /// Start executing `gfxd` with the current settings.
+    ///
+    /// The `data` argument is a big endian byte array containing the `Gfx`
+    /// packets to be disassembled.
+    ///
+    /// `microcode` corresponds to the target microcode to decode the data.
+    ///
+    /// `customizer` allows registering callbacks to customize the output or to
+    /// extract data from each macro type.
     ///
     /// For each macro, the macro handler registered with [`macro_fn`] is
     /// called.

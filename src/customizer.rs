@@ -13,9 +13,29 @@ use crate::{
     TexSiz, TlutCount,
 };
 
+/// Customize the output for each `Gfx` macro, and extract data from each macro.
+///
+/// This allows extending or replacing the normal functionality of `gfxd` by
+/// registering callbacks for each specific situation.
+///
+/// Each callback is passed a reference of either [`MacroInfo`], [`Printer`],
+/// and/or [`MacroPrinter`] which allows to inspect the contents of the current
+/// macro or write output to the output buffer.
+///
+/// There are 3 major groups for the registered callbacks:
+/// - [`before_after_execution_callback`]: Callbacks that will be called before
+///   and after the current `gfxd` execution.
+/// - [`macro_fn`]: Replace or extend the behavior for each specific macro.
+/// - Argument callbacks: Callbacks that will be executed when certain types
+///   of macros are encountered.
+///
+/// [`before_after_execution_callback`]: Customizer::before_after_execution_callback
+/// [`macro_fn`]: Customizer::macro_fn
 // 'cls is short for closure
 #[allow(clippy::type_complexity)]
 pub struct Customizer<'cls> {
+    // These two callbacks are called only once during the whole disassembly,so
+    // it would be nice if they were FnOnce, but I couldn't get it to work.
     before_execution: Option<&'cls mut dyn FnMut(&mut Printer)>,
     after_execution: Option<&'cls mut dyn FnMut(&mut Printer)>,
 
@@ -556,6 +576,7 @@ impl Customizer<'_> {
 }
 
 impl Customizer<'_> {
+    /// Create a new instance of the customizer.
     pub fn new() -> Self {
         Self {
             before_execution: None,
@@ -582,6 +603,18 @@ impl Customizer<'_> {
 }
 
 impl<'cls> Customizer<'cls> {
+    /// Register callbacks that are called before and after the execution of
+    /// `gfxd`.
+    ///
+    /// Allows to do some setup work for the output buffer, like writing
+    /// opening and closing braces.
+    ///
+    /// `before` is called before `gfxd` starts executing, so the output buffer
+    /// will be empty at this point. `after` is called once `gfxd` finishes
+    /// running, and it is the very last code that is run before returning the
+    /// disassembled output to the user.
+    ///
+    /// Both callbacks are called only once.
     pub fn before_after_execution_callback<B, A>(
         &mut self,
         before: &'cls mut B,
