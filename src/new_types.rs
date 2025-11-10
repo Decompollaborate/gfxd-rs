@@ -3,7 +3,7 @@
 
 use core::fmt;
 
-/// An address pointed by a `Gfx` macro.
+/// An address pointed to by a `Gfx` macro.
 #[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Address(pub u32);
 

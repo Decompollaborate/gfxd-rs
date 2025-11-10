@@ -202,6 +202,7 @@ pub enum ArgType {
 }
 
 impl ArgType {
+    /// An string represation of the argument type.
     pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Word => "Word",
@@ -303,6 +304,7 @@ impl ArgType {
         }
     }
 
+    /// Convert an integer value to an argument type.
     pub const fn from_u32(value: u32) -> Option<Self> {
         match value {
             0 => Some(Self::Word),
@@ -405,6 +407,7 @@ impl ArgType {
         }
     }
 
+    /// Convert this argument type to a plain integer.
     pub const fn to_u32(&self) -> u32 {
         match self {
             Self::Word => 0,

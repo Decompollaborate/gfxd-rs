@@ -75,6 +75,9 @@ pub struct Disassembler<'d> {
 }
 
 impl<'d> Disassembler<'d> {
+    /// Construct a `Disassembler` instance.
+    ///
+    /// Consult the `Disassembler` struct documentation for more information.
     #[must_use]
     pub fn new() -> Self {
         Self {

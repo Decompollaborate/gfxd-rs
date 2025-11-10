@@ -19,7 +19,7 @@ pub struct MacroPrinter {
 }
 
 impl Printer {
-    // It should not be possible to construct this type by the user.
+    // It should not be possible to construct this type by library consumers.
     pub(crate) const fn new() -> Self {
         Self { _unit: () }
     }
@@ -46,7 +46,7 @@ impl Printer {
 }
 
 impl MacroPrinter {
-    // It should not be possible to construct this type by the user.
+    // It should not be possible to construct this type by library consumers.
     pub(crate) const fn new() -> Self {
         Self {
             printer: Printer::new(),

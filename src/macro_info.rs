@@ -8,24 +8,27 @@ use crate::{utils, ArgType, MacroId};
 
 const SIZEOF_GFX: usize = 8;
 
+/// An utility to inspect information from the current `Gfx` macro.
 pub struct MacroInfo {
     // Placeholder to avoid constructing this type
     _unit: (),
 }
 
 impl MacroInfo {
-    // It should not be possible to construct this type by the user.
+    // It should not be possible to construct this type by library consumers.
     #[must_use]
     pub(crate) const fn new() -> Self {
         Self { _unit: () }
     }
 
+    /// Returns the offset in the input data of the current macro.
     #[must_use]
     pub fn macro_offset(&self) -> u32 {
         let offset = unsafe { gfxd_sys::macro_info::gfxd_macro_offset() };
         offset as _
     }
 
+    /// Returns the number of Gfx packets within the current macro.
     #[must_use]
     pub fn macro_packets(&self) -> u32 {
         let offset = unsafe { gfxd_sys::macro_info::gfxd_macro_packets() };
@@ -123,6 +126,7 @@ impl MacroInfo {
         Some(name)
     }
 
+    /// Returns the value in the current argument.
     #[must_use]
     pub fn arg_value(&self, arg_num: u32) -> Option<ArgValue> {
         if arg_num >= self.arg_count() {
@@ -159,11 +163,15 @@ impl MacroInfo {
     }
 }
 
+/// A value of a `Gfx` argument.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[must_use]
 pub enum ArgValue {
+    /// Signed value
     I(i32),
+    /// Unsigned value
     U(u32),
+    /// Float value
     F(f32),
 }
 

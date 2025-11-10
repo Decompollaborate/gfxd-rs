@@ -82,7 +82,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![deny(improper_ctypes)]
-// #![warn(missing_docs)]
+#![warn(missing_docs)]
 // TODO: enable in MSRV 1.52+
 // #![deny(unsafe_op_in_unsafe_fn)]
 

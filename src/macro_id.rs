@@ -150,6 +150,7 @@ pub enum MacroId {
 }
 
 impl MacroId {
+    /// An string represation of the macro identifier.
     pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Invalid => "Invalid",
@@ -294,6 +295,7 @@ impl MacroId {
         }
     }
 
+    /// Convert an integer value to an macro identifier.
     pub const fn from_u32(value: u32) -> Option<Self> {
         match value {
             0 => Some(Self::Invalid),
@@ -439,6 +441,7 @@ impl MacroId {
         }
     }
 
+    /// Convert this macro identifier to a plain integer.
     pub const fn to_u32(&self) -> u32 {
         match self {
             Self::Invalid => 0,
