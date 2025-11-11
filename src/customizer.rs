@@ -2,7 +2,7 @@
 /* SPDX-License-Identifier: MIT */
 
 use core::{
-    convert::TryInto,
+    convert::TryInto as _,
     num::{NonZeroU16, NonZeroU32},
     slice,
 };
@@ -168,7 +168,7 @@ impl Customizer<'_> {
                 if let Some(closure) = &mut lib_data.get_customizer_mut().arg_fn {
                     let mut printer = MacroPrinter::new();
                     let mut info = MacroInfo::new();
-                    (closure)(&mut printer, &mut info, arg_num)
+                    (closure)(&mut printer, &mut info, arg_num);
                 } else {
                     panic!("arg_fn closure was None?")
                 }
@@ -192,6 +192,7 @@ impl Customizer<'_> {
                     let mut printer = Printer::new();
                     let mut info = MacroInfo::new();
                     let timg = Address(tlut);
+                    #[allow(clippy::cast_possible_truncation)]
                     let index = if idx == -1 { None } else { Some(idx as u8) };
                     let tlut_count = TlutCount::new(count);
                     (closure)(&mut printer, &mut info, timg, index, tlut_count)
@@ -227,15 +228,21 @@ impl Customizer<'_> {
                     let timg = Address(timg);
                     let tex_fmt = TexFmt::new(fmt);
                     let tex_siz = TexSiz::new(siz);
+                    #[allow(clippy::cast_possible_truncation)]
+                    let width = width as _;
+                    #[allow(clippy::cast_possible_truncation)]
+                    let height = height as _;
+                    #[allow(clippy::cast_possible_truncation)]
+                    let pal = pal as _;
                     (closure)(
                         &mut printer,
                         &mut info,
                         timg,
                         tex_fmt,
                         tex_siz,
-                        width as _,
-                        height as _,
-                        pal as _,
+                        width,
+                        height,
+                        pal,
                     )
                 } else {
                     panic!("timg_fn closure was None?")
@@ -262,7 +269,9 @@ impl Customizer<'_> {
                     let cimg = Address(cimg);
                     let tex_fmt = TexFmt::new(fmt);
                     let tex_siz = TexSiz::new(siz);
-                    (closure)(&mut printer, &mut info, cimg, tex_fmt, tex_siz, width as _)
+                    #[allow(clippy::cast_possible_truncation)]
+                    let width = width as _;
+                    (closure)(&mut printer, &mut info, cimg, tex_fmt, tex_siz, width)
                 } else {
                     panic!("cimg_fn closure was None?")
                 };
@@ -432,7 +441,9 @@ impl Customizer<'_> {
                     let mut printer = Printer::new();
                     let mut info = MacroInfo::new();
                     let seg = Address(seg);
-                    (closure)(&mut printer, &mut info, seg, num as _)
+                    #[allow(clippy::cast_possible_truncation)]
+                    let num = num as _;
+                    (closure)(&mut printer, &mut info, seg, num)
                 } else {
                     panic!("seg_fn closure was None?")
                 };
@@ -556,6 +567,7 @@ impl Customizer<'_> {
                         .get()
                         .try_into()
                         .expect("This value should be less than 0x4096");
+                    #[allow(clippy::shadow_unrelated)]
                     let size = unsafe { NonZeroU16::new_unchecked(size_raw) };
                     (closure)(&mut printer, &mut info, dram, size)
                 } else {
@@ -577,6 +589,7 @@ impl Customizer<'_> {
 
 impl Customizer<'_> {
     /// Create a new instance of the customizer.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             before_execution: None,
@@ -1044,7 +1057,7 @@ impl<'cls> Customizer<'cls> {
     }
 }
 
-impl<'cls> Default for Customizer<'cls> {
+impl Default for Customizer<'_> {
     fn default() -> Self {
         Self::new()
     }

@@ -62,10 +62,13 @@ pub(crate) struct LibDataWrap<'l, 'c, 'cls> {
 
 impl<'l, 'c, 'cls> LibDataWrap<'l, 'c, 'cls> {
     fn new(lib_data: &'l mut LibData<'c, 'cls>) -> Self {
-        assert!(unsafe { gfxd_sys::settings::gfxd_udata_get() }.is_none());
+        assert!(
+            unsafe { gfxd_sys::settings::gfxd_udata_get() }.is_none(),
+            "BUG! There shouldn't be more instances."
+        );
 
         let me = NonNullMut::new_void(lib_data);
-        assert!(me.is_some());
+        assert!(me.is_some(), "BUG! This should always be true");
         unsafe {
             gfxd_sys::settings::gfxd_udata_set(me);
         }

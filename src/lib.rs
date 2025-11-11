@@ -85,6 +85,19 @@
 #![warn(missing_docs)]
 // TODO: enable in MSRV 1.52+
 // #![deny(unsafe_op_in_unsafe_fn)]
+// TODO: Change some `allow`ed clippy warnings into `expect`ed ones in MSRV 1.81+.
+#![warn(clippy::missing_const_for_fn)]
+#![warn(clippy::must_use_candidate)]
+#![allow(clippy::cast_sign_loss)]
+#![warn(clippy::semicolon_if_nothing_returned)]
+#![warn(clippy::cast_possible_truncation)]
+#![allow(clippy::as_underscore)]
+#![allow(clippy::expect_used)]
+#![warn(clippy::unwrap_used)]
+#![allow(clippy::shadow_reuse)]
+#![warn(clippy::str_to_string)]
+#![warn(clippy::shadow_unrelated)]
+#![warn(clippy::unused_trait_names)]
 
 extern crate alloc;
 

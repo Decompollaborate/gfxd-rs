@@ -27,10 +27,12 @@ impl Printer {
     /// Write the given str to the output buffer.
     pub fn write_str(&mut self, s: &str) {
         let buf = NonNullConst::from_ref(s).cast();
+        // s.len() is the number of bytes in str instead of number of chars
+        #[allow(clippy::cast_possible_truncation)]
+        let len = s.len() as _;
 
         unsafe {
-            // s.len() is the number of bytes in str instead of number of chars
-            gfxd_sys::custom_output::gfxd_write(buf, s.len() as _);
+            gfxd_sys::custom_output::gfxd_write(buf, len);
         }
     }
 

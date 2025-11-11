@@ -187,7 +187,7 @@ impl ArgValue {
         }
     }
 
-    pub(crate) fn to_gfxd_value(
+    pub(crate) const fn to_gfxd_value(
         self,
     ) -> (
         gfxd_sys::macro_info::ArgFmt,

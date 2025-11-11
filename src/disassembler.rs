@@ -1,7 +1,7 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
 /* SPDX-License-Identifier: MIT */
 
-use alloc::string::{String, ToString};
+use alloc::{borrow::ToOwned as _, string::String};
 use gfxd_sys::{ffi, ptr::NonNullConst};
 
 use crate::{
@@ -79,7 +79,7 @@ impl<'d> Disassembler<'d> {
     ///
     /// Consult the `Disassembler` struct documentation for more information.
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             dynamic: None,
             stop_on_invalid: true,
@@ -201,7 +201,7 @@ impl<'d> Disassembler<'d> {
         // gfxd. Allocating it outside disassemble_impl and passing the
         // reference should ensure that, as far as I understand it.
         let dynamic = self.dynamic.map(|x| {
-            let mut x = x.to_string();
+            let mut x = x.to_owned();
             // nul-terminate the string
             x.push('\0');
             x
@@ -230,6 +230,8 @@ impl<'d> Disassembler<'d> {
         lib_data_wrap: &mut LibDataWrap,
         dynamic: Option<NonNullConst<ffi::c_char>>,
     ) {
+        #[allow(clippy::cast_possible_truncation)]
+        let data_len = data.len() as _;
         // Setup input and output
         unsafe {
             // We only use the input_buffer and the output_callback functions
@@ -237,7 +239,7 @@ impl<'d> Disassembler<'d> {
             // or the fd ones.
             // I don't know if it is worth to expose those in the API.
 
-            gfxd_sys::io::gfxd_input_buffer(NonNullConst::new_void(data.as_ptr()), data.len() as _);
+            gfxd_sys::io::gfxd_input_buffer(NonNullConst::new_void(data.as_ptr()), data_len);
         }
 
         // Set the microcode
@@ -282,6 +284,7 @@ impl<'d> Disassembler<'d> {
 }
 
 fn set_feature_option(on: bool, cap: gfxd_sys::settings::FeatureOption) {
+    #[allow(clippy::multiple_unsafe_ops_per_block)]
     unsafe {
         if on {
             gfxd_sys::settings::gfxd_enable(cap);

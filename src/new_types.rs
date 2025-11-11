@@ -38,7 +38,11 @@ impl TlutCount {
         match value {
             16 => Self::Pal16,
             256 => Self::Pal256,
-            x => Self::Other(x as _),
+            x => {
+                #[allow(clippy::cast_possible_truncation)]
+                let x = x as _;
+                Self::Other(x)
+            }
         }
     }
 }
@@ -94,7 +98,11 @@ impl TexFmt {
             2 => Self::CI,
             3 => Self::IA,
             4 => Self::I,
-            x => Self::Other(x as _),
+            x => {
+                #[allow(clippy::cast_possible_truncation)]
+                let x = x as _;
+                Self::Other(x)
+            }
         }
     }
 }

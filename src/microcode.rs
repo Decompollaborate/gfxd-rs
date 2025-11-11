@@ -16,6 +16,7 @@ pub enum Microcode {
 
 impl Microcode {
     /// Get a `Microcode` variant from its name.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "f3d" => Some(Self::F3d),
