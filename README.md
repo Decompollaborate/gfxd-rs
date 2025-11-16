@@ -5,8 +5,8 @@ A safe Rust wrapper for [glankk](https://github.com/glankk)'s C library
 disassembler library.
 
 This crate uses the [`gfxd-sys`](https://crates.io/crates/gfxd-sys) crate,
-which exposes Raw FFI bindings for `libgfxd`, meaning this crate requires a
-C compiler.
+which exposes Raw FFI bindings for `libgfxd`, meaning this crate **requires a
+C compiler**.
 
 ## Example usage
 
@@ -84,6 +84,9 @@ The current policy is that this may be changed in minor version updates.
 
 ## Cargo features
 
+This crate does not depend on Rust's `std` crates. It does depend on Rust's
+`core` and `alloc` crates.
+
 Currently none of the available features are enabled by default.
 
 - `std`: Turns on `std` (or turn off `no_std`, depending on how you prefer it).
@@ -91,6 +94,18 @@ Currently none of the available features are enabled by default.
   is wrapping (`libgfxd`) does depend on the C standard library, including
   IO functions like the `printf` family and allocation functions like the
   `malloc` family.
+
+## Versioning and changelog
+
+This library follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+We try to always keep backwards compatibility, so no breaking changes should
+happen until a major release (i.e. jumping from 1.X.X to 2.0.0).
+
+To see what changed on each release visit either the
+[CHANGELOG.md](https://github.com/Decompollaborate/gfxd-rs/blob/-/CHANGELOG.md)
+file or check the [releases page on Github](https://github.com/Decompollaborate/gfxd-rs/releases).
+You can also use [this link](https://github.com/Decompollaborate/gfxd-rs/releases/latest)
+to check the latest release.
 
 ## See also
 
