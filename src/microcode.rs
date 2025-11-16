@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Apache-2.0 */
 
 use gfxd_sys::settings::{gfxd_f3d, gfxd_f3db, gfxd_f3dex, gfxd_f3dex2, gfxd_f3dexb, gfxd_ucode_t};
 

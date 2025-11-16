@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Apache-2.0 */
 
 use core::{
     convert::TryInto as _,

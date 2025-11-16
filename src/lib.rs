@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Apache-2.0 */
 
 // TODO: Use #![doc = include_str!("../README.md")] when the MSRV is 1.54+
 //! A safe Rust wrapper for [glankk](https://github.com/glankk)'s C library

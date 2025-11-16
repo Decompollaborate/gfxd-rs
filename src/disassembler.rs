@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Apache-2.0 */
 
 use alloc::{borrow::ToOwned as _, string::String};
 use gfxd_sys::{ffi, ptr::NonNullConst};

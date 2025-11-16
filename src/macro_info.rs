@@ -1,5 +1,5 @@
 /* SPDX-FileCopyrightText: © 2025 Decompollaborate */
-/* SPDX-License-Identifier: MIT */
+/* SPDX-License-Identifier: MIT OR Apache-2.0 */
 
 use core::{fmt, slice};
 use gfxd_sys::{ffi, macro_info::gfxd_value_t, ptr::NonNullConst};
