@@ -41,9 +41,9 @@ dependencies = [
 
 [[package]]
 name = "gfxd-sys"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bbe9cff295daf3ec6162cfa793f92934cbba3fa373a8c64e18c25d64f121978"
+checksum = "6b12996d07f28c86921305857e6290a38011543dcf21805b2958dfa08f315270"
 dependencies = [
  "cc",
  "libc",
